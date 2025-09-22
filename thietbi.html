@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thiết bị — Medicate</title>
+  <link rel="icon" href="assets/img/favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <!-- include cùng navbar như index.html (copy nguyên khối <header> ở trên) -->
+  <!-- để ngắn gọn, bạn copy nguyên phần header từ index.html dán vào đây -->
+  <!-- START HEADER -->
+  <!-- ... (copy từ index.html, nhớ sửa link tương đối) ... -->
+  <!-- END HEADER -->
+
+  <main class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <h1 class="text-2xl md:text-3xl font-semibold">Thiết bị</h1>
+    <p class="mt-2 text-slate-600">Chọn danh mục ở menu hoặc dùng lưới bên dưới để xem thiết bị trong tủ.</p>
+
+    <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <a href="thietbi.html?cat=cam-bien" class="block rounded-2xl border p-5 hover:shadow">
+        <div class="font-medium">Cảm biến</div>
+        <p class="text-sm text-slate-600 mt-1">DHT22 Temperature & Humidity Sensor…</p>
+      </a>
+      <a href="thietbi.html?cat=vi-dieu-khien" class="block rounded-2xl border p-5 hover:shadow">
+        <div class="font-medium">Vi điều khiển</div>
+        <p class="text-sm text-slate-600 mt-1">ESP32 DevKit, Module GM65…</p>
+      </a>
+      <a href="thietbi.html?cat=man-hinh" class="block rounded-2xl border p-5 hover:shadow">
+        <div class="font-medium">Màn hình hiển thị</div>
+        <p class="text-sm text-slate-600 mt-1">OLED 0.96”, LCD TFT 2.8”…</p>
+      </a>
+      <a href="thietbi.html?cat=nguon-pin" class="block rounded-2xl border p-5 hover:shadow">
+        <div class="font-medium">Nguồn / Pin / Sạc</div>
+        <p class="text-sm text-slate-600 mt-1">Pin AA, 18650, sạc 3.7V, đế pin…</p>
+      </a>
+      <a href="thietbi.html?cat=giam-ap" class="block rounded-2xl border p-5 hover:shadow">
+        <div class="font-medium">Module giảm áp</div>
+        <p class="text-sm text-slate-600 mt-1">MP1584 (5V→3V), LM2596S (5V)…</p>
+      </a>
+      <a href="thietbi.html?cat=phu-kien" class="block rounded-2xl border p-5 hover:shadow">
+        <div class="font-medium">Phụ kiện</div>
+        <p class="text-sm text-slate-600 mt-1">Breadboard, dây nối đực-đực, …</p>
+      </a>
+    </div>
+
+    <div class="mt-10 rounded-2xl border border-dashed p-6 text-slate-500">
+      Trang chi tiết từng thiết bị sẽ mở theo danh mục (dùng query <code>?cat=...</code>). Nội dung sẽ bổ sung sau.
+    </div>
+  </main>
+
+  <!-- FOOTER (copy từ index.html) -->
+  <!-- ... -->
+  <script src="assets/js/nav.js"></script>
+</body>
+</html>

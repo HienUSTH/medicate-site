@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Medicate</title>
+  <meta name="description" content="Tủ thuốc thông minh — theo dõi nhiệt/ẩm, quản lý kho theo lô, AI tư vấn dược." />
+  <link rel="icon" href="assets/img/favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <!-- NAVBAR -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo -->
+        <a href="index.html" class="flex items-center gap-2 font-semibold">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white">M</span>
+          <span class="text-lg">Medicate</span>
+        </a>
+
+        <!-- Desktop nav -->
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="index.html" class="py-2 hover:text-sky-700">Trang chủ</a>
+
+          <!-- Thiết bị dropdown -->
+          <div class="relative group">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1">
+              Thiết bị
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div class="absolute left-0 mt-3 hidden group-hover:block">
+              <div class="w-64 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="thietbi.html?cat=cam-bien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Cảm biến</a>
+                <a href="thietbi.html?cat=vi-dieu-khien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Vi điều khiển</a>
+                <a href="thietbi.html?cat=man-hinh" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Màn hình hiển thị</a>
+                <a href="thietbi.html?cat=nguon-pin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Nguồn / Pin / Sạc</a>
+                <a href="thietbi.html?cat=giam-ap" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Module giảm áp</a>
+                <a href="thietbi.html?cat=phu-kien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Phụ kiện</a>
+              </div>
+            </div>
+          </div>
+
+          <a href="kho.html" class="py-2 hover:text-sky-700">Kho thuốc</a>
+          <a href="trangthai.html" class="py-2 hover:text-sky-700">Trạng thái</a>
+          <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
+
+          <!-- Người dùng dropdown -->
+          <div class="relative group">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1">
+              Người dùng
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div class="absolute right-0 mt-3 hidden group-hover:block">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
+                <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Mobile: hamburger -->
+        <button id="btnMobile" class="md:hidden p-2 rounded-lg border border-slate-300" aria-label="Mở menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobileMenu" class="md:hidden hidden border-t border-slate-200 bg-white">
+      <div class="max-w-screen-xl mx-auto px-4 py-3 space-y-1">
+        <a href="index.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Trang chủ</a>
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Thiết bị</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="thietbi.html?cat=cam-bien" class="block py-1">• Cảm biến</a>
+            <a href="thietbi.html?cat=vi-dieu-khien" class="block py-1">• Vi điều khiển</a>
+            <a href="thietbi.html?cat=man-hinh" class="block py-1">• Màn hình hiển thị</a>
+            <a href="thietbi.html?cat=nguon-pin" class="block py-1">• Nguồn / Pin / Sạc</a>
+            <a href="thietbi.html?cat=giam-ap" class="block py-1">• Module giảm áp</a>
+            <a href="thietbi.html?cat=phu-kien" class="block py-1">• Phụ kiện</a>
+          </div>
+        </details>
+        <a href="kho.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Kho thuốc</a>
+        <a href="trangthai.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Trạng thái</a>
+        <a href="mini-dashboard.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Mini dashboard</a>
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Người dùng</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="user.html?tab=signup" class="block py-1">• Đăng ký</a>
+            <a href="user.html?tab=signin" class="block py-1">• Đăng nhập</a>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO (placeholder, để trống theo yêu cầu) -->
+  <main>
+    <section class="bg-gradient-to-b from-white to-slate-50">
+      <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+        <h1 class="text-3xl md:text-5xl font-semibold tracking-tight">Trang chủ (để trống tạm)</h1>
+        <p class="mt-4 text-slate-600 max-w-2xl mx-auto">Sẽ thêm nội dung sau khi thống nhất.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mt-16 border-t border-slate-200 bg-white">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2 font-semibold">
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white">M</span>
+            <span>Medicate</span>
+          </div>
+          <p class="text-sm mt-3 text-slate-600">Tủ thuốc thông minh: cảm biến nhiệt/ẩm, quản lý theo lô, AI tư vấn.</p>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Liên kết</div>
+          <ul class="space-y-1 text-sm">
+            <li><a class="hover:text-sky-700" href="kho.html">Kho thuốc</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html">Trạng thái</a></li>
+            <li><a class="hover:text-sky-700" href="mini-dashboard.html">Mini dashboard</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Tài liệu</div>
+          <ul class="space-y-1 text-sm">
+            <li><a class="hover:text-sky-700" href="#">Hướng dẫn sử dụng</a></li>
+            <li><a class="hover:text-sky-700" href="#">Nguồn & Credits</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Liên hệ</div>
+          <ul class="space-y-1 text-sm">
+            <li>Email: team@example.com</li>
+          </ul>
+        </div>
+      </div>
+      <p class="mt-8 text-xs text-slate-500">⚠️ Thông tin dược chỉ mang tính tham khảo — hãy hỏi ý kiến bác sĩ/DS khi cần.</p>
+    </div>
+  </footer>
+
+  <script src="assets/js/nav.js"></script>
+</body>
+</html>
