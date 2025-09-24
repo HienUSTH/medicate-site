@@ -23,14 +23,15 @@
         <nav class="hidden md:flex items-center gap-6">
           <a href="index.html" class="py-2 hover:text-sky-700">Trang chủ</a>
 
-          <!-- Thiết bị dropdown -->
-          <div class="relative group">
-            <button class="py-2 hover:text-sky-700 flex items-center gap-1">
+          <!-- Thiết bị dropdown (đã chuyển sang JS-control, có mục Tất cả) -->
+          <div class="relative" data-dd="devices">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false" aria-haspopup="true">
               Thiết bị
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
             </button>
-            <div class="absolute left-0 mt-3 hidden group-hover:block">
+            <div class="dd-menu absolute left-0 mt-3 hidden">
               <div class="w-64 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="thietbi.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Tất cả</a>
                 <a href="thietbi.html?cat=cam-bien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Cảm biến</a>
                 <a href="thietbi.html?cat=vi-dieu-khien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Vi điều khiển</a>
                 <a href="thietbi.html?cat=man-hinh" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Màn hình hiển thị</a>
@@ -42,16 +43,30 @@
           </div>
 
           <a href="kho.html" class="py-2 hover:text-sky-700">Kho thuốc</a>
-          <a href="trangthai.html" class="py-2 hover:text-sky-700">Trạng thái</a>
+
+          <!-- Trạng thái dropdown (Hiện giờ / Lịch sử) -->
+          <div class="relative" data-dd="status">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false" aria-haspopup="true">
+              Trạng thái
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div class="dd-menu absolute left-0 mt-3 hidden">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="trangthai.html?view=now" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Hiện giờ</a>
+                <a href="trangthai.html?view=history" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Lịch sử</a>
+              </div>
+            </div>
+          </div>
+
           <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
 
-          <!-- Người dùng dropdown -->
-          <div class="relative group">
-            <button class="py-2 hover:text-sky-700 flex items-center gap-1">
+          <!-- Người dùng dropdown (đã dùng cùng cơ chế JS để tránh mất hover) -->
+          <div class="relative" data-dd="user">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false" aria-haspopup="true">
               Người dùng
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
             </button>
-            <div class="absolute right-0 mt-3 hidden group-hover:block">
+            <div class="dd-menu absolute right-0 mt-3 hidden">
               <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
                 <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
                 <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
@@ -71,9 +86,11 @@
     <div id="mobileMenu" class="md:hidden hidden border-t border-slate-200 bg-white">
       <div class="max-w-screen-xl mx-auto px-4 py-3 space-y-1">
         <a href="index.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Trang chủ</a>
+
         <details class="px-3 py-2 rounded-lg">
           <summary class="cursor-pointer select-none">Thiết bị</summary>
           <div class="mt-2 pl-3 space-y-1">
+            <a href="thietbi.html" class="block py-1">• Tất cả</a>
             <a href="thietbi.html?cat=cam-bien" class="block py-1">• Cảm biến</a>
             <a href="thietbi.html?cat=vi-dieu-khien" class="block py-1">• Vi điều khiển</a>
             <a href="thietbi.html?cat=man-hinh" class="block py-1">• Màn hình hiển thị</a>
@@ -82,9 +99,19 @@
             <a href="thietbi.html?cat=phu-kien" class="block py-1">• Phụ kiện</a>
           </div>
         </details>
+
         <a href="kho.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Kho thuốc</a>
-        <a href="trangthai.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Trạng thái</a>
+
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Trạng thái</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="trangthai.html?view=now" class="block py-1">• Hiện giờ</a>
+            <a href="trangthai.html?view=history" class="block py-1">• Lịch sử</a>
+          </div>
+        </details>
+
         <a href="mini-dashboard.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Mini dashboard</a>
+
         <details class="px-3 py-2 rounded-lg">
           <summary class="cursor-pointer select-none">Người dùng</summary>
           <div class="mt-2 pl-3 space-y-1">
@@ -121,7 +148,8 @@
           <div class="font-medium mb-2">Liên kết</div>
           <ul class="space-y-1 text-sm">
             <li><a class="hover:text-sky-700" href="kho.html">Kho thuốc</a></li>
-            <li><a class="hover:text-sky-700" href="trangthai.html">Trạng thái</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html?view=now">Trạng thái – Hiện giờ</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html?view=history">Trạng thái – Lịch sử</a></li>
             <li><a class="hover:text-sky-700" href="mini-dashboard.html">Mini dashboard</a></li>
           </ul>
         </div>
