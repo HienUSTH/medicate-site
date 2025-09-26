@@ -131,7 +131,6 @@
       </div>
     </div>
   </header>
-  <!-- /NAVBAR -->
 
   <!-- MAIN -->
   <main class="max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-6 py-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
@@ -170,8 +169,8 @@
             <col style="width: 10%" />
             <col style="width: 12%" />
             <col style="width: 12%" />
-            <col style="width: 10%" />
-            <col style="width: 4%" />
+            <col style="width: 9%" />
+            <col style="width: 8%" /> <!-- nới rộng cột Còn (ngày) -->
           </colgroup>
           <thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
             <tr>
@@ -222,8 +221,7 @@
         <!-- Quick prompts -->
         <div class="flex flex-wrap gap-2">
           <button class="chip-q px-3 py-1.5 rounded-full border border-slate-300 text-sm hover:bg-slate-50" data-q="sắp hết hạn trong 30 ngày">SHH 30 ngày</button>
-          <!-- NEW: tình trạng 1 thuốc ngẫu nhiên -->
-          <button id="chipRandOne" class="chip-q px-3 py-1.5 rounded-full border border-slate-300 text-sm hover:bg-slate-50" data-q="">Tình trạng: …</button>
+          <button id="chipRandOne" class="chip-q px-3 py-1.5 rounded-full border border-slate-300 text-sm hover:bg-slate-50" data-q="">Tên ngẫu nhiên: SL, HSD</button>
           <button id="chipRandPair" class="chip-q px-3 py-1.5 rounded-full border border-slate-300 text-sm hover:bg-slate-50" data-q="">Ngẫu nhiên 2 tên</button>
         </div>
 
@@ -233,7 +231,7 @@
           <button id="btnSend" class="px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Gửi</button>
         </div>
 
-        <!-- Conversation (có scroll riêng) -->
+        <!-- Conversation (scroll riêng) -->
         <div id="chatList" class="space-y-3 max-h-[46vh] overflow-y-auto pr-1"></div>
       </div>
 

@@ -1,6 +1,5 @@
 /***********************
- * KHO – Bảng + Danh mục + Local AI (stabilized)
- * (Giữ nguyên baseline; chỉ thêm chip "Tình trạng: <thuốc>")
+ * KHO – Bảng + Danh mục + Local AI (keep baseline, add: fields/sort/compare)
  ***********************/
 
 /* ===== CONFIG ===== */
@@ -33,18 +32,18 @@ function parseVNDate(raw){
 }
 const fmtDaysLeft=v=>(v===''||v==null)?'':(v<=0?`quá hạn ${Math.abs(v)} ngày`:`${v} ngày`);
 const sum=a=>a.reduce((s,x)=>s+(Number(x)||0),0);
-function statusBadge(st){
-  const map={'Hết hạn':'bg-rose-100 text-rose-700 border-rose-200','Sắp hết hạn':'bg-amber-100 text-amber-800 border-amber-200','Còn hạn':'bg-emerald-100 text-emerald-700 border-emerald-200'};
-  const dot=st==='Hết hạn'?'bg-rose-500':st==='Sắp hết hạn'?'bg-amber-500':'bg-emerald-500';
-  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${map[st]||'bg-slate-100'}"><span class="inline-block w-1.5 h-1.5 rounded-full ${dot}"></span>${st}</span>`;
-}
 
-// Levenshtein fuzzy
-function lev(a,b){ const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+// Levenshtein
+function lev(a,b){ const m=a.length,n=b.length; if(!m)return n; if(!n)return m;
   const d=new Array(n+1); for(let j=0;j<=n;j++) d[j]=j;
   for(let i=1;i<=m;i++){ let p=d[0]; d[0]=i; for(let j=1;j<=n;j++){ const t=d[j];
     d[j]=Math.min(d[j]+1,d[j-1]+1,p+(a[i-1]===b[j-1]?0:1)); p=t; } }
   return d[n];
+}
+function statusBadge(st){
+  const map={'Hết hạn':'bg-rose-100 text-rose-700 border-rose-200','Sắp hết hạn':'bg-amber-100 text-amber-800 border-amber-200','Còn hạn':'bg-emerald-100 text-emerald-700 border-emerald-200'};
+  const dot=st==='Hết hạn'?'bg-rose-500':st==='Sắp hết hạn'?'bg-amber-500':'bg-emerald-500';
+  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${map[st]||'bg-slate-100'}"><span class="inline-block w-1.5 h-1.5 rounded-full ${dot}"></span>${st}</span>`;
 }
 
 /* ===== STATE ===== */
@@ -69,15 +68,9 @@ async function loadAll(){
     const soLuong=Number(String(r['SỐ LƯỢNG']||r['Số lượng']||r['SO LUONG']).replace(/[^\d.-]/g,''))||0;
     const d=hsd?hsd.startOf('day').diff(today,'day'):null; // 0 = hết hạn
     const trangThai=(d==null)?'Còn hạn':(d<=0?'Hết hạn':(d<=30?'Sắp hết hạn':'Còn hạn'));
-    return {
-      ten:r['TÊN THUỐC GỐC']||r['TEN THUOC GOC']||r['Tên thuốc gốc']||'',
-      alias:r['ALIAS']||'',
-      soLuong,
-      hsd:hsd?hsd.format('DD/MM/YYYY'):(r['HSD']||''),
-      ngayNhap:ngayNhap?ngayNhap.format('DD/MM/YYYY'):(r['NGÀY NHẬP']||r['Ngày nhập']||''),
-      daysLeft:(d==null)?'':d,
-      trangThai
-    };
+    return { ten:r['TÊN THUỐC GỐC']||r['TEN THUOC GOC']||r['Tên thuốc gốc']||'', alias:r['ALIAS']||'', soLuong,
+      hsd:hsd?hsd.format('DD/MM/YYYY'):(r['HSD']||''), ngayNhap:ngayNhap?ngayNhap.format('DD/MM/YYYY'):(r['NGÀY NHẬP']||r['Ngày nhập']||''),
+      daysLeft:(d==null)?'':d, trangThai };
   });
 
   MAX_QTY=RAW.MedData.reduce((m,x)=>Math.max(m,Number(x.soLuong)||0),0);
@@ -86,8 +79,8 @@ async function loadAll(){
 
   RAW.DanhMucSearch=dm.map(r=>({ten:r['TÊN THUỐC GỐC']||r['TEN THUOC GOC']||r['Tên thuốc gốc']||'', alias:r['ALIAS']||''}));
   buildCatalog(); buildNameIndex(); applyFilters(); renderCatalog();
-  setupRandomOneChip();      // NEW
-  setupRandomPairChip();     // existing
+  setupRandomOneChip();   // new
+  setupRandomPairChip();  // existed
 }
 
 /* ===== CATALOG ===== */
@@ -95,7 +88,7 @@ function buildCatalog(){
   const setKho=new Set(RAW.MedData.map(x=>nn(x.ten)).filter(Boolean));
   CATALOG=RAW.DanhMucSearch.filter(x=>x.ten).map(x=>({...x,has:setKho.has(nn(x.ten))}));
   const total=CATALOG.length, have=CATALOG.filter(x=>x.has).length;
-  const cov = total?Math.round(have/total*100):0;
+  const cov=total?Math.round(have/total*100):0;
   const badge=document.getElementById('coverageBadge'); if(badge) badge.textContent=`Coverage: ${cov}% (${have}/${total})`;
 }
 function renderCatalog(){
@@ -122,24 +115,32 @@ function buildNameIndex(){
   NAME_INDEX=Array.from(seen.values());
 }
 function findNamesInQuery(raw,maxN=8){
-  const s=nn(raw); const hits=[];
+  const s=nn(raw);
+  const hits=[];
   for(const it of NAME_INDEX){
-    const yes = s.includes(it.canon) || Array.from(it.aliasSet).some(a=>a&&s.includes(a));
-    if(yes) hits.push({canonical:it.display,canon:it.canon,has:it.has,score:0});
+    const ok=s.includes(it.canon) || Array.from(it.aliasSet).some(a=>a && s.includes(a));
+    if(ok) hits.push({canonical:it.display,canon:it.canon,has:it.has,score:0});
   }
+  // fuzzy + prefix "vitamin"
   if(!hits.length){
+    // vitamin → lấy mọi tên bắt đầu bằng "vitamin "
+    if(/\bvitamin\b/.test(s) && !/\bvitamin\s*(c|b6)\b/.test(s)){
+      NAME_INDEX.filter(x=>x.canon.startsWith('vitamin ')).forEach(it=>hits.push({canonical:it.display,canon:it.canon,has:it.has,score:0}));
+    }
+    // typo 1–2 ký tự
     const tokens=s.split(' ').filter(t=>t.length>=5 && !STOPWORDS.has(t));
-    let best=null;
+    const seenTok=new Set();
     for(const tok of tokens){
+      if(seenTok.has(tok)) continue; seenTok.add(tok);
       for(const it of NAME_INDEX){
         const d=Math.min(lev(tok,it.canon),...Array.from(it.aliasSet).map(a=>lev(tok,a)));
-        if(d<=2){ if(!best||d<best.d) best={it,d,token:tok}; }
+        if(d<=2) hits.push({canonical:it.display,canon:it.canon,has:it.has,score:100-d});
       }
     }
-    if(best) hits.push({canonical:best.it.display,canon:best.it.canon,has:best.it.has,score:100-best.d});
   }
-  const seen=new Set(), out=[];
-  for(const h of hits){ if(!seen.has(h.canon)){ seen.add(h.canon); out.push(h); if(out.length>=maxN) break; } }
+  // unique theo canon
+  const seenC=new Set(), out=[];
+  for(const h of hits){ if(!seenC.has(h.canon)){ seenC.add(h.canon); out.push(h); if(out.length>=maxN) break; } }
   return out;
 }
 
@@ -172,12 +173,12 @@ function renderTable(){
       <td class="py-2.5 px-3 whitespace-nowrap bg-indigo-50/40">${r.hsd}</td>
       <td class="py-2.5 px-3 whitespace-nowrap bg-indigo-50/20">${r.ngayNhap}</td>
       <td class="py-2.5 px-3 text-center whitespace-nowrap">${statusBadge(r.trangThai)}</td>
-      <td class="py-2.5 px-3 text-right bg-slate-50/60">${fmtDaysLeft(r.daysLeft)}</td>
+      <td class="py-2.5 px-3 text-right whitespace-nowrap bg-slate-50/60 mono">${fmtDaysLeft(r.daysLeft)}</td>
     </tr>
   `).join('');
 }
 
-/* ===== CHIPS ===== */
+/* ===== CHIP COLOR ===== */
 const CHIP_ACTIVE={all:'bg-sky-600 text-white border-sky-600',ok:'bg-emerald-600 text-white border-emerald-600',soon:'bg-amber-500 text-white border-amber-500',expired:'bg-rose-600 text-white border-rose-600'};
 function setActiveChip(btn){
   document.querySelectorAll('.filter-chip').forEach(b=>{ const base=CHIP_BASE.get(b)||b.className; CHIP_BASE.set(b,base.replace(/\s?active\b/,'')); b.className=CHIP_BASE.get(b); });
@@ -185,7 +186,7 @@ function setActiveChip(btn){
 }
 
 /* ===== LOCAL AI (Kho) ===== */
-function parseNumberDays(s){
+function parseFlexibleDays(s){
   const n=nn(s);
   let m=n.match(/\b(\d+(?:[.,]\d+)?)\s*(ngay|day|d)\b/); if(m) return Math.round(Number(m[1].replace(',','.')));
   m=n.match(/\b(\d+(?:[.,]\d+)?)\s*(tuan|week|w)\b/);    if(m) return Math.round(Number(m[1].replace(',','.'))*7);
@@ -193,28 +194,52 @@ function parseNumberDays(s){
   m=n.match(/\b(\d+(?:[.,]\d+)?)\s*(nam|year|y|yr|yrs)\b/); if(m) return Math.round(Number(m[1].replace(',','.'))*365);
   return null;
 }
-function inferCmp(s){
+function parseDaysCompare(s){
   const n=nn(s);
-  if (/(<=|≤|\btrong\b|\bduoi\b|\bnho hon\b|\bit hon\b|\btoi da\b)/.test(n)) return '<=';
-  if (/(>=|≥|\btren\b|\blon hon\b|\bhon\b|\btoi thieu\b)/.test(n)) return '>=';
+  if (/(<=|≤|\btrong\b|\bduoi\b|\bnho hon\b|\bit hon\b|\btoi da\b|\bkhoang\b|\bkhoảng\b)/.test(n)) return '<=';
+  if (/(>=|≥|\btren\b|\blon hon\b|\bhon\b|\bnhi(ieu|ều)\s*hon\b|\btoi thieu\b)/.test(n)) return '>=';
   if (/<\s*\d/.test(s)) return '<';
   if (/>\s*\d/.test(s)) return '>';
-  return '<='; // mặc định “trong …”
+  return '<='; // mặc định: trong/≤
 }
 function parseDaysIntent(s0){
   let s=' '+nn(s0)+' ';
   s=s.replace(/\bden han\b/g,'het han').replace(/\bden hsd\b/g,'het han').replace(/\bqh\b/g,'qua han');
-  const days=parseNumberDays(s);
-  if (/\bsap het han\b/.test(s)) return { mode:'to_expiry', cmp:'<=', days: days ?? 30 };
-  if (/\bqua han\b/.test(s))    return days!=null ? { mode:'overdue', cmp:'<=', days } : { need:true, hint:'quá hạn' };
-  if (/\bhet han\b/.test(s))    return days!=null ? { mode:'to_expiry', cmp:'<=', days } : { need:true, hint:'hết hạn' };
+  const days=parseFlexibleDays(s);
+  const cmp=parseDaysCompare(s);
+  if (/\bqua han\b/.test(s)) return days!=null?{mode:'overdue',cmp,days}:{need:true,hint:'quá hạn'};
+  // “hết hạn trong …” hay “sắp hết hạn …” → hiểu là tới HSD (chưa quá hạn)
+  if (/\b(het han|hsd|sap het han)\b/.test(s) && days!=null) return {mode:'to_expiry',cmp,days};
+  if (/\bsap het han\b/.test(s) && days==null) return {mode:'to_expiry',cmp:'<=',days:30};
+  // “còn hạn trên …”
+  if (/\bcon han\b/.test(s) && days!=null) return {mode:'to_expiry',cmp,days};
   return null;
 }
 function parseQtyIntent(s){
   const n=nn(s);
-  const m1=n.match(/\bsl\s*(<=|>=|<|>|=)?\s*(\d+)\b/); if(m1) return { cmp:(m1[1]||'<='), value:Number(m1[2]) };
-  const m2=n.match(/\b(duoi|nho hon|it hon|toi da)\s*(\d+)\b/); if(m2) return { cmp:'<=', value:Number(m2[2]) };
-  const m3=n.match(/\b(tren|lon hon|hon|toi thieu)\s*(\d+)\b/);  if(m3) return { cmp:'>=', value:Number(m3[2]) };
+  const m1=n.match(/\bsl\s*(<=|>=|<|>|=)?\s*(\d+)\b/); if(m1) return {cmp:(m1[1]||'<='),value:Number(m1[2])};
+  const m2=n.match(/\b(duoi|nho hon|it hon|toi da)\s*(\d+)\b/); if(m2) return {cmp:'<=',value:Number(m2[2])};
+  const m3=n.match(/\b(tren|lon hon|hon|toi thieu)\s*(\d+)\b/);  if(m3) return {cmp:'>=',value:Number(m3[2])};
+  return null;
+}
+function parseFieldSelect(s){
+  const n=nn(s); const f=[];
+  if (/\balias\b/.test(n)) f.push('alias');
+  if (/\b(sl|so luong|ton)\b/.test(n)) f.push('sl');
+  if (/\b(hsd|han|han su dung|expiry)\b/.test(n)) f.push('hsd');
+  if (/\b(ngay nhap|nhap)\b/.test(n)) f.push('ngay');
+  if (/\b(trang thai|status|tt)\b/.test(n)) f.push('trangthai');
+  if (/\b(con (ngay)|days left|con bao nhieu ngay|bao nhieu ngay)\b/.test(n)) f.push('daysleft');
+  return f;
+}
+function parseSortIntent(s){
+  const n=nn(s); let key=null, dir=null;
+  if (/\b(hsd|han|expiry)\b/.test(n)) key='hsd';
+  else if (/\b(sl|so luong|ton)\b/.test(n)) key='sl';
+  else if (/\b(ten|name)\b/.test(n)) key='name';
+  if (/\b(giam dan|desc|muon nhat|lon nhat|muon)\b/.test(n)) dir='desc';
+  else if (/\b(tang dan|asc|som nhat|nho nhat|som)\b/.test(n)) dir='asc';
+  if (/\b(sap xep|theo thu tu|order|sort)\b/.test(n) || key || dir) return {key:key||'name', dir:dir||'asc'};
   return null;
 }
 function cmp(x,op,y){ if(op==='<=')return x<=y; if(op==='<')return x<y; if(op==='>=')return x>=y; if(op==='>')return x>y; if(op==='=')return x===y; return true; }
@@ -237,51 +262,129 @@ function filterRowsByCriteria(c){
       if (c.state==='soon'    && r.trangThai!=='Sắp hết hạn') return false;
       if (c.state==='ok'      && r.trangThai!=='Còn hạn') return false;
     }
-    if (c.qty && !cmp(Number(r.soLuong)||0, c.qty.cmp, c.qty.value)) return false;
+    if (c.qty && !cmp(Number(r.soLuong)||0,c.qty.cmp,c.qty.value)) return false;
     return true;
   });
 }
 
+function renderFieldsTable(rows, fields){
+  const heads=['TÊN THUỐC', ...fields.map(k=>{
+    if(k==='alias') return 'ALIAS';
+    if(k==='sl') return 'SỐ LƯỢNG';
+    if(k==='hsd') return 'HSD';
+    if(k==='ngay') return 'NGÀY NHẬP';
+    if(k==='trangthai') return 'TRẠNG THÁI';
+    if(k==='daysleft') return 'CÒN (ngày)';
+    return k.toUpperCase();
+  })];
+  const body=rows.map(r=>{
+    return [r.ten, ...fields.map(k=>{
+      if(k==='alias') return r.alias||'';
+      if(k==='sl') return String(r.soLuong);
+      if(k==='hsd') return r.hsd||'';
+      if(k==='ngay') return r.ngayNhap||'';
+      if(k==='trangthai') return r.trangThai||'';
+      if(k==='daysleft') return r.daysLeft===''?'':String(r.daysLeft);
+      return '';
+    })];
+  });
+  return { headers:heads, rows:body };
+}
+
 function localAnswer(qRaw){
   const q=String(qRaw||'').trim(); if(!q) return { ok:true, type:'text', content:'Bạn hãy nhập câu hỏi nhé.' };
-
-  const nameHits=findNamesInQuery(q,10);
-  const namesCanon=nameHits.map(h=>h.canon);
+  const nameHits=findNamesInQuery(q,16);
+  let namesCanon=nameHits.map(h=>h.canon); // bao gồm fuzzy
 
   const s=nn(q);
   const daysIntent=parseDaysIntent(q);
   const qtyIntent=parseQtyIntent(q);
-  let state=null;
-  if (/\bqua han\b/.test(s)||/\bhet han\b/.test(s)) state='expired';
-  else if (/\bsap het han\b/.test(s)) state='soon';
-  else if (/\bcon han\b/.test(s)||/\bchua het han\b/.test(s)) state='ok';
+  const fieldsWant=parseFieldSelect(q);
+  const sortWant=parseSortIntent(q);
 
+  let state=null;
+  if (/\bqua han\b/.test(s)) state='expired';
+  else if (/\bsap het han\b/.test(s)) state='soon';
+  else if (/\bcon han\b/.test(s)) state='ok';
+  // “các thuốc hết hạn/…” không có số → chỉ dùng state
   const listy=/\b(cac|danh sach|liet ke|thuoc nao)\b/.test(s);
   const useDays=(daysIntent && daysIntent.need && !listy)? null : daysIntent;
   if (daysIntent && daysIntent.need && !listy){
     return { ok:true, type:'text', content:`Bạn đang hỏi về "${daysIntent.hint}" nhưng chưa nêu mốc ngày. Ví dụ: "hết HSD trong 14 ngày", "quá hạn ≥ 7 ngày".` };
   }
 
-  const inStockCanon=new Set(RAW.MedData.map(r=>nn(r.ten)));
-  if (namesCanon.length && !useDays && !qtyIntent && !state){
-    const missing=nameHits.filter(x=>!inStockCanon.has(x.canon));
-    if(missing.length){ const txt=missing.map(x=>x.canonical).join(', '); return { ok:true, type:'text', content:`${txt} — chưa có trong kho.` }; }
+  // nếu hỏi “có trong kho không / còn bao nhiêu” cho 1 tên
+  if (namesCanon.length && /\b(con bao nhieu|bao nhieu|co trong kho)\b/.test(s)){
+    const rows=filterRowsByCriteria({ names:namesCanon });
+    if(!rows.length) return { ok:true, type:'text', content:`${nameHits.map(h=>h.canonical).join(', ')} — chưa có trong kho.` };
+    const byName=new Map();
+    for(const r of rows){
+      const v=byName.get(r.ten)||{ten:r.ten,sl:0,earliest:null};
+      v.sl+=(Number(r.soLuong)||0);
+      const h=parseVNDate(r.hsd); if(h && (!v.earliest||h.isBefore(v.earliest))) v.earliest=h;
+      byName.set(r.ten,v);
+    }
+    const lines=Array.from(byName.values()).map(v=>`${v.ten}: SL ${v.sl}${v.earliest?`, HSD sớm nhất ${v.earliest.format('DD/MM/YYYY')}`:''}`);
+    return { ok:true, type:'text', content: lines.join('\n') };
   }
 
+  // tiêu chí
   const criteria={ names:namesCanon, days:useDays||null, qty:qtyIntent||null, state };
   let rows=filterRowsByCriteria(criteria);
 
-  const title=[]; if(namesCanon.length) title.push(nameHits.map(h=>h.canonical).join(' + '));
-  if(criteria.state==='expired') title.push('Hết hạn');
-  if(criteria.state==='soon')    title.push('Sắp hết hạn');
-  if(criteria.state==='ok')      title.push('Còn hạn');
-  if(criteria.days){ title.push(criteria.days.mode==='to_expiry'?`Tới HSD ≤ ${criteria.days.days} ngày`:`Quá HSD ≤ ${criteria.days.days} ngày`); }
-  if(criteria.qty){ title.push(`SL ${criteria.qty.cmp} ${criteria.qty.value}`); }
-
+  // không có kết quả
   if(!rows.length){
-    return { ok:true, type:'text', content:`Không có kết quả phù hợp${title.length?' — '+title.join(' — '):''}.` };
+    if(namesCanon.length){
+      const inStockCanon=new Set(RAW.MedData.map(r=>nn(r.ten)));
+      const missing=nameHits.filter(x=>!inStockCanon.has(x.canon)).map(x=>x.canonical);
+      if(missing.length) return { ok:true, type:'text', content:`Không tìm thấy lô phù hợp. ${missing.join(', ')} — hiện chưa có trong kho.` };
+    }
+    const bits=[];
+    if (criteria.state==='expired') bits.push('Hết hạn');
+    if (criteria.state==='soon')    bits.push('Sắp hết hạn');
+    if (criteria.state==='ok')      bits.push('Còn hạn');
+    if (criteria.days){ bits.push(criteria.days.mode==='to_expiry'?`Tới HSD ≤ ${criteria.days.days} ngày`:`Quá HSD ≤ ${criteria.days.days} ngày`); }
+    if (criteria.qty){ bits.push(`SL ${criteria.qty.cmp} ${criteria.qty.value}`); }
+    return { ok:true, type:'text', content:`Không có kết quả phù hợp${bits.length?' — '+bits.join(' — '):''}.` };
   }
 
+  // Sắp xếp theo yêu cầu
+  if(sortWant){
+    if(sortWant.key==='hsd'){
+      const today=dayjs().startOf('day');
+      rows.sort((a,b)=>{
+        const da=parseVNDate(a.hsd)?.startOf('day').diff(today,'day') ?? 1e9;
+        const db=parseVNDate(b.hsd)?.startOf('day').diff(today,'day') ?? 1e9;
+        return sortWant.dir==='asc' ? (da-db || a.ten.localeCompare(b.ten)) : (db-da || a.ten.localeCompare(b.ten));
+      });
+    }else if(sortWant.key==='sl'){
+      rows.sort((a,b)=> sortWant.dir==='asc' ? ((Number(a.soLuong)||0)-(Number(b.soLuong)||0)) : ((Number(b.soLuong)||0)-(Number(a.soLuong)||0)) );
+    }else{ // tên
+      rows.sort((a,b)=> sortWant.dir==='asc' ? a.ten.localeCompare(b.ten) : b.ten.localeCompare(a.ten) );
+    }
+  }else{
+    // default: nếu dính HSD/trạng thái → sort theo HSD gần nhất
+    const askHSD = !!criteria.days || !!criteria.state || /\b(hsd|han|het han|sap het han|qua han)\b/.test(s);
+    if(askHSD){
+      const today=dayjs().startOf('day');
+      rows.sort((a,b)=>{
+        const da=parseVNDate(a.hsd)?.startOf('day').diff(today,'day') ?? 1e9;
+        const db=parseVNDate(b.hsd)?.startOf('day').diff(today,'day') ?? 1e9;
+        return da-db || String(a.ten).localeCompare(String(b.ten));
+      });
+    }else{
+      rows.sort((a,b)=>String(a.ten).localeCompare(b.ten) || String(a.hsd).localeCompare(b.hsd));
+    }
+  }
+
+  // Chỉ hiển thị cột được yêu cầu?
+  if (fieldsWant.length){
+    const table=renderFieldsTable(rows, fieldsWant);
+    const ttl=`${nameHits.map(h=>h.canonical).join(' + ') || 'Kết quả'} — ${rows.length} lô`;
+    return { ok:true, type:'table', title:ttl, headers:table.headers, rows:table.rows };
+  }
+
+  // Tổng hợp theo tên nếu có từ khóa “tổng”
   const wantSummary = /\b(tong|tong hop|gom|gop|aggregate|sum)\b/.test(s) || /: *sl *,? *hsd/i.test(q);
   if (wantSummary){
     const byName=new Map();
@@ -298,25 +401,14 @@ function localAnswer(qRaw){
       v.ten, Array.from(v.alias).slice(0,1).join(', '), String(v.tongSL),
       v.earliest? v.earliest.format('DD/MM/YYYY'):'', v.latest? v.latest.format('DD/MM/YYYY'):''
     ]);
-    const ttl=`${title.length?title.join(' — '):'Tổng hợp'} — ${out.length} tên, tổng SL ${sum(out.map(r=>Number(r[2])||0))}`;
+    const ttl=`${nameHits.map(h=>h.canonical).join(' + ') || 'Tổng hợp'} — ${out.length} tên, tổng SL ${sum(out.map(r=>Number(r[2])||0))}`;
     return { ok:true, type:'table', title:ttl, headers, rows:out };
   }
 
-  const askHSD = !!criteria.days || !!criteria.state || /\b(hsd|han|het han|sap het han|qua han)\b/.test(s);
-  if(askHSD){
-    const today=dayjs().startOf('day');
-    rows.sort((a,b)=>{
-      const da=parseVNDate(a.hsd)?.startOf('day').diff(today,'day') ?? 1e9;
-      const db=parseVNDate(b.hsd)?.startOf('day').diff(today,'day') ?? 1e9;
-      return da-db || String(a.ten).localeCompare(b.ten);
-    });
-  }else{
-    rows.sort((a,b)=>String(a.ten).localeCompare(b.ten) || String(a.hsd).localeCompare(b.hsd));
-  }
-
+  // Bảng mặc định (đầy đủ)
   const headers=['TÊN THUỐC','ALIAS','SỐ LƯỢNG','HSD','NGÀY NHẬP','TRẠNG THÁI','CÒN (ngày)'];
   const out=rows.map(r=>[r.ten,r.alias,String(r.soLuong),r.hsd,r.ngayNhap,r.trangThai,(r.daysLeft===''?'':String(r.daysLeft))]);
-  const ttl=`${title.length?title.join(' — '):'Kết quả'} — ${rows.length} lô / ${new Set(rows.map(r=>r.ten)).size} tên, tổng SL ${sum(rows.map(r=>Number(r.soLuong)||0))}`;
+  const ttl=`${nameHits.map(h=>h.canonical).join(' + ') || 'Kết quả'} — ${rows.length} lô / ${new Set(rows.map(r=>r.ten)).size} tên, tổng SL ${sum(rows.map(r=>Number(r.soLuong)||0))}`;
   return { ok:true, type:'table', title:ttl, headers, rows:out };
 }
 
@@ -342,14 +434,13 @@ function sendKhoQuery(text){
   const id=pushLoading(); const ans=localAnswer(q); replaceLoading(id, renderAns(ans));
 }
 
-/* ===== Random chips ===== */
+/* ===== RANDOM CHIPS ===== */
 function setupRandomOneChip(){
   const btn=document.getElementById('chipRandOne'); if(!btn) return;
   const pool=Array.from(new Set(RAW.MedData.map(r=>r.ten).filter(Boolean)));
-  if(!pool.length){ btn.textContent='Tình trạng: (trống)'; btn.dataset.q=''; btn.disabled=true; return; }
+  if(!pool.length){ btn.textContent='Tên ngẫu nhiên: (trống)'; btn.dataset.q=''; btn.disabled=true; return; }
   const name=pool[Math.floor(Math.random()*pool.length)];
-  btn.textContent=`Tình trạng: ${name}`;
-  // Hỏi theo lô để xem SL + HSD (tt cụ thể)
+  btn.textContent=`${name}: SL, HSD`;
   btn.dataset.q=`${name}: SL, HSD`;
 }
 function setupRandomPairChip(){
