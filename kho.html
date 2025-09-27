@@ -32,7 +32,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
 
-  <!-- NAVBAR: copy y hệt index.html -->
+  <!-- NAVBAR (giống index – không thay đổi kích thước) -->
   <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200">
     <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
@@ -132,8 +132,8 @@
     </div>
   </header>
 
-  <!-- MAIN: nới rộng phần nội dung, giữ nguyên navbar -->
-  <main class="max-w-screen-2xl mx-auto px-2 sm:px-4 lg:px-5 py-6 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+  <!-- MAIN (mở rộng phần thân, KHÔNG đổi header) -->
+  <main class="max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-6 py-6 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
     <!-- LEFT -->
     <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 border-b border-slate-200 flex flex-wrap items-center gap-3">
@@ -152,24 +152,13 @@
         </div>
       </div>
 
-      <!-- FILTER BAR (hover xanh, viền xám mặc định cho “Tất cả”) -->
+      <!-- FILTER BAR -->
       <div class="p-3 border-b border-slate-200 flex flex-wrap gap-2">
-        <button data-filter="all"
-          class="filter-chip px-3 py-1.5 rounded-full border text-sm border-slate-300 hover:bg-sky-50 hover:border-sky-400 hover:text-sky-700">
-          Tất cả
-        </button>
-        <button data-filter="ok"
-          class="filter-chip px-3 py-1.5 rounded-full border text-sm border-emerald-300 hover:bg-emerald-50 hover:border-emerald-400">
-          Còn hạn
-        </button>
-        <button data-filter="soon"
-          class="filter-chip px-3 py-1.5 rounded-full border text-sm border-amber-300 hover:bg-amber-50 hover:border-amber-400">
-          Sắp hết hạn
-        </button>
-        <button data-filter="expired"
-          class="filter-chip px-3 py-1.5 rounded-full border text-sm border-rose-300 hover:bg-rose-50 hover:border-rose-400">
-          Hết hạn
-        </button>
+        <!-- “Tất cả” mặc định viền xanh & hover xanh -->
+        <button data-filter="all"     class="filter-chip px-3 py-1.5 rounded-full border text-sm border-sky-300 hover:bg-sky-50">Tất cả</button>
+        <button data-filter="ok"      class="filter-chip px-3 py-1.5 rounded-full border text-sm border-emerald-300 hover:bg-emerald-50">Còn hạn</button>
+        <button data-filter="soon"    class="filter-chip px-3 py-1.5 rounded-full border text-sm border-amber-300 hover:bg-amber-50">Sắp hết hạn</button>
+        <button data-filter="expired" class="filter-chip px-3 py-1.5 rounded-full border text-sm border-rose-300 hover:bg-rose-50">Hết hạn</button>
       </div>
 
       <!-- TABLE -->
@@ -232,9 +221,9 @@
 
         <!-- Quick prompts -->
         <div class="flex flex-wrap gap-2">
-          <button class="chip-q px-3 py-1.5 rounded-full border border-slate-300 text-sm hover:bg-sky-50" data-q="sắp hết hạn trong 30 ngày">SHH 30 ngày</button>
-          <button id="chipRandOne" class="chip-q px-3 py-1.5 rounded-full border border-slate-300 text-sm hover:bg-sky-50" data-q="">Tên ngẫu nhiên: SL, HSD</button>
-          <button id="chipRandPair" class="chip-q px-3 py-1.5 rounded-full border border-slate-300 text-sm hover:bg-sky-50" data-q="">Ngẫu nhiên 2 tên</button>
+          <button class="chip-q px-3 py-1.5 rounded-full border border-slate-300 text-sm hover:bg-slate-50" data-q="sắp hết hạn trong 30 ngày">SHH 30 ngày</button>
+          <button id="chipRandOne" class="chip-q px-3 py-1.5 rounded-full border border-slate-300 text-sm hover:bg-slate-50" data-q="">Tên ngẫu nhiên: SL, HSD</button>
+          <button id="chipRandPair" class="chip-q px-3 py-1.5 rounded-full border border-slate-300 text-sm hover:bg-slate-50" data-q="">Ngẫu nhiên 2 tên</button>
         </div>
 
         <!-- Composer -->
@@ -247,13 +236,13 @@
         <div id="chatList" class="space-y-3 max-h-[46vh] overflow-y-auto pr-1"></div>
       </div>
 
-      <!-- Chatbot Thuốc (UI dựng bởi thuoc.js khi bật tab) -->
+      <!-- Chatbot Thuốc (UI được dựng bởi thuoc.js khi bật tab) -->
       <div id="chatThuoc" class="hidden mt-3"></div>
     </aside>
   </main>
 
   <footer class="mt-4 border-t border-slate-200 bg-white">
-    <div class="max-w-screen-2xl mx-auto px-2 sm:px-4 lg:px-5 py-6">
+    <div class="max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-6 py-6">
       <p class="text-xs text-slate-500">
         ⚠️ Thông tin dược chỉ mang tính tham khảo — hãy hỏi ý kiến bác sĩ/DS khi cần.
       </p>
@@ -268,13 +257,14 @@
   <script src="assets/js/kho.js"></script>
   <script src="assets/js/thuoc.js"></script>
 
-  <!-- Switch 2 chế độ: lazy-init cho Tra cứu thuốc -->
+  <!-- Switch 2 chế độ -->
   <script>
     (function () {
       const tabKho   = document.getElementById('tabKho');
       const tabThuoc = document.getElementById('tabThuoc');
       const chatKho  = document.getElementById('chatKho');
       const chatThuoc= document.getElementById('chatThuoc');
+
       function ensureDrugUI(){ if (window.buildDrugUI) window.buildDrugUI(); }
       function activate(which){
         const isKho = which === 'kho';
