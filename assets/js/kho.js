@@ -477,3 +477,11 @@ function initEvents(){
 }
 initEvents();
 loadAll();
+
+// Cuối kho.js (sau initEvents(); loadAll();)
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof window.wireTabsForThuoc === 'function') {
+    window.wireTabsForThuoc();
+  }
+});
+
