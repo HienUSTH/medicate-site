@@ -4,54 +4,195 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Thiết bị — Medicate</title>
+  <meta name="description" content="Danh mục thiết bị phần cứng cho dự án Medicate." />
   <link rel="icon" href="assets/img/favicon.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 text-slate-800">
-  <!-- include cùng navbar như index.html (copy nguyên khối <header> ở trên) -->
-  <!-- để ngắn gọn, bạn copy nguyên phần header từ index.html dán vào đây -->
-  <!-- START HEADER -->
-  <!-- ... (copy từ index.html, nhớ sửa link tương đối) ... -->
-  <!-- END HEADER -->
+
+  <!-- ===== HEADER: copy giống index ===== -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-2 font-semibold">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white">M</span>
+          <span class="text-lg">Medicate</span>
+        </a>
+
+        <!-- Desktop nav -->
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="index.html" class="py-2 hover:text-sky-700">Trang chủ</a>
+
+          <!-- Thiết bị dropdown -->
+          <div class="relative" data-dd="devices">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false" aria-haspopup="true">
+              Thiết bị
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div class="dd-menu absolute left-0 mt-3 hidden">
+              <div class="w-64 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="thietbi.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Tất cả</a>
+                <a href="thietbi.html?cat=cam-bien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Cảm biến</a>
+                <a href="thietbi.html?cat=vi-dieu-khien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Vi điều khiển</a>
+                <a href="thietbi.html?cat=man-hinh" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Màn hình hiển thị</a>
+                <a href="thietbi.html?cat=nguon-pin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Nguồn / Pin / Sạc</a>
+                <a href="thietbi.html?cat=giam-ap" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Module giảm áp</a>
+                <a href="thietbi.html?cat=phu-kien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Phụ kiện</a>
+              </div>
+            </div>
+          </div>
+
+          <a href="kho.html" class="py-2 hover:text-sky-700">Kho thuốc</a>
+
+          <!-- Trạng thái dropdown -->
+          <div class="relative" data-dd="status">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false" aria-haspopup="true">
+              Trạng thái
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div class="dd-menu absolute left-0 mt-3 hidden">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="trangthai.html?view=now" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Hiện giờ</a>
+                <a href="trangthai.html?view=history" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Lịch sử</a>
+              </div>
+            </div>
+          </div>
+
+          <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
+
+          <!-- Người dùng dropdown -->
+          <div class="relative" data-dd="user">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false" aria-haspopup="true">
+              Người dùng
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div class="dd-menu absolute right-0 mt-3 hidden">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
+                <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Mobile: hamburger -->
+        <button id="btnMobile" class="md:hidden p-2 rounded-lg border border-slate-300" aria-label="Mở menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobileMenu" class="md:hidden hidden border-t border-slate-200 bg-white">
+      <div class="max-w-screen-xl mx-auto px-4 py-3 space-y-1">
+        <a href="index.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Trang chủ</a>
+
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Thiết bị</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="thietbi.html" class="block py-1">• Tất cả</a>
+            <a href="thietbi.html?cat=cam-bien" class="block py-1">• Cảm biến</a>
+            <a href="thietbi.html?cat=vi-dieu-khien" class="block py-1">• Vi điều khiển</a>
+            <a href="thietbi.html?cat=man-hinh" class="block py-1">• Màn hình hiển thị</a>
+            <a href="thietbi.html?cat=nguon-pin" class="block py-1">• Nguồn / Pin / Sạc</a>
+            <a href="thietbi.html?cat=giam-ap" class="block py-1">• Module giảm áp</a>
+            <a href="thietbi.html?cat=phu-kien" class="block py-1">• Phụ kiện</a>
+          </div>
+        </details>
+
+        <a href="kho.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Kho thuốc</a>
+
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Trạng thái</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="trangthai.html?view=now" class="block py-1">• Hiện giờ</a>
+            <a href="trangthai.html?view=history" class="block py-1">• Lịch sử</a>
+          </div>
+        </details>
+
+        <a href="mini-dashboard.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Mini dashboard</a>
+
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Người dùng</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="user.html?tab=signup" class="block py-1">• Đăng ký</a>
+            <a href="user.html?tab=signin" class="block py-1">• Đăng nhập</a>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+  <!-- ===== /HEADER ===== -->
 
   <main class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <h1 class="text-2xl md:text-3xl font-semibold">Thiết bị</h1>
-    <p class="mt-2 text-slate-600">Chọn danh mục ở menu hoặc dùng lưới bên dưới để xem thiết bị trong tủ.</p>
-
-    <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <a href="thietbi.html?cat=cam-bien" class="block rounded-2xl border p-5 hover:shadow">
-        <div class="font-medium">Cảm biến</div>
-        <p class="text-sm text-slate-600 mt-1">DHT22 Temperature & Humidity Sensor…</p>
-      </a>
-      <a href="thietbi.html?cat=vi-dieu-khien" class="block rounded-2xl border p-5 hover:shadow">
-        <div class="font-medium">Vi điều khiển</div>
-        <p class="text-sm text-slate-600 mt-1">ESP32 DevKit, Module GM65…</p>
-      </a>
-      <a href="thietbi.html?cat=man-hinh" class="block rounded-2xl border p-5 hover:shadow">
-        <div class="font-medium">Màn hình hiển thị</div>
-        <p class="text-sm text-slate-600 mt-1">OLED 0.96”, LCD TFT 2.8”…</p>
-      </a>
-      <a href="thietbi.html?cat=nguon-pin" class="block rounded-2xl border p-5 hover:shadow">
-        <div class="font-medium">Nguồn / Pin / Sạc</div>
-        <p class="text-sm text-slate-600 mt-1">Pin AA, 18650, sạc 3.7V, đế pin…</p>
-      </a>
-      <a href="thietbi.html?cat=giam-ap" class="block rounded-2xl border p-5 hover:shadow">
-        <div class="font-medium">Module giảm áp</div>
-        <p class="text-sm text-slate-600 mt-1">MP1584 (5V→3V), LM2596S (5V)…</p>
-      </a>
-      <a href="thietbi.html?cat=phu-kien" class="block rounded-2xl border p-5 hover:shadow">
-        <div class="font-medium">Phụ kiện</div>
-        <p class="text-sm text-slate-600 mt-1">Breadboard, dây nối đực-đực, …</p>
-      </a>
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-semibold">Thiết bị</h1>
+        <p class="mt-1 text-slate-600">Danh mục phần cứng dùng trong dự án Medicate. Dùng ô tìm kiếm để lọc nhanh.</p>
+      </div>
+      <div class="w-full md:w-80">
+        <label class="sr-only" for="dev-search">Tìm thiết bị</label>
+        <div class="relative">
+          <input id="dev-search" type="search" placeholder="Tìm theo tên/thông số…"
+                 class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-sky-500">
+          <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z"/>
+          </svg>
+        </div>
+      </div>
     </div>
 
-    <div class="mt-10 rounded-2xl border border-dashed p-6 text-slate-500">
-      Trang chi tiết từng thiết bị sẽ mở theo danh mục (dùng query <code>?cat=...</code>). Nội dung sẽ bổ sung sau.
+    <!-- Lưới danh mục tắt/bật nhanh -->
+    <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="category-grid">
+      <!-- JS render các category card -->
     </div>
+
+    <!-- Accordion danh mục & thiết bị -->
+    <section id="device-accordions" class="mt-8 space-y-4">
+      <!-- JS render <details> cho từng danh mục -->
+    </section>
   </main>
 
-  <!-- FOOTER (copy từ index.html) -->
-  <!-- ... -->
+  <!-- ===== FOOTER ===== -->
+  <footer class="mt-16 border-t border-slate-200 bg-white">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2 font-semibold">
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white">M</span>
+            <span>Medicate</span>
+          </div>
+          <p class="text-sm mt-3 text-slate-600">Tủ thuốc thông minh: cảm biến nhiệt/ẩm, quản lý theo lô, AI tư vấn.</p>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Liên kết</div>
+          <ul class="space-y-1 text-sm">
+            <li><a class="hover:text-sky-700" href="kho.html">Kho thuốc</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html?view=now">Trạng thái – Hiện giờ</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html?view=history">Trạng thái – Lịch sử</a></li>
+            <li><a class="hover:text-sky-700" href="mini-dashboard.html">Mini dashboard</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Tài liệu</div>
+          <ul class="space-y-1 text-sm">
+            <li><a class="hover:text-sky-700" href="#">Hướng dẫn sử dụng</a></li>
+            <li><a class="hover:text-sky-700" href="#">Nguồn & Credits</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Liên hệ</div>
+          <ul class="space-y-1 text-sm">
+            <li>Email: <a class="hover:text-sky-700" href="mailto:contact@medicate.com.vn">contact@medicate.com.vn</a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="mt-8 text-xs text-slate-500">⚠️ Thông tin dược chỉ mang tính tham khảo — hãy hỏi ý kiến bác sĩ/DS khi cần.</p>
+    </div>
+  </footer>
+
+  <!-- JS -->
   <script src="assets/js/nav.js"></script>
+  <script src="assets/js/thietbi.js"></script>
 </body>
 </html>

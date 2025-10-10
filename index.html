@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 text-slate-800">
-  <!-- NAVBAR -->
+  <!-- NAVBAR (giữ nguyên) -->
   <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200">
     <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
@@ -23,7 +23,7 @@
         <nav class="hidden md:flex items-center gap-6">
           <a href="index.html" class="py-2 hover:text-sky-700">Trang chủ</a>
 
-          <!-- Thiết bị dropdown (đã chuyển sang JS-control, có mục Tất cả) -->
+          <!-- Thiết bị dropdown -->
           <div class="relative" data-dd="devices">
             <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false" aria-haspopup="true">
               Thiết bị
@@ -44,7 +44,7 @@
 
           <a href="kho.html" class="py-2 hover:text-sky-700">Kho thuốc</a>
 
-          <!-- Trạng thái dropdown (Hiện giờ / Lịch sử) -->
+          <!-- Trạng thái dropdown -->
           <div class="relative" data-dd="status">
             <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false" aria-haspopup="true">
               Trạng thái
@@ -60,7 +60,7 @@
 
           <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
 
-          <!-- Người dùng dropdown (đã dùng cùng cơ chế JS để tránh mất hover) -->
+          <!-- Người dùng dropdown -->
           <div class="relative" data-dd="user">
             <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false" aria-haspopup="true">
               Người dùng
@@ -123,17 +123,54 @@
     </div>
   </header>
 
-  <!-- HERO (placeholder, để trống theo yêu cầu) -->
+  <!-- MAIN -->
   <main>
+    <!-- HERO: Medicate + Slogan -->
     <section class="bg-gradient-to-b from-white to-slate-50">
-      <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <h1 class="text-3xl md:text-5xl font-semibold tracking-tight">Trang chủ (để trống tạm)</h1>
-        <p class="mt-4 text-slate-600 max-w-2xl mx-auto">Sẽ thêm nội dung sau khi thống nhất.</p>
+      <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="flex flex-wrap items-end justify-center gap-4 text-center">
+          <h1 class="m-0 font-extrabold tracking-tight
+                     text-transparent bg-clip-text
+                     bg-gradient-to-r from-sky-600 to-emerald-500
+                     text-5xl md:text-7xl">
+            Medicate
+          </h1>
+          <p class="text-slate-600 text-base md:text-xl max-w-3xl">
+            Smart medicine cabinet — real-time temperature & humidity, inventory control, and AI-powered lookups.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUCT SHOWCASE: ảnh sản phẩm cuối cùng -->
+    <section class="pb-6">
+      <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-3">
+            <div class="bg-slate-50 lg:col-span-2 p-3 md:p-4 flex items-center justify-center">
+              <img id="product-latest"
+                   src="assets/img/final-product.jpg"
+                   alt="Medicate — Final product preview"
+                   class="w-full h-auto rounded-xl object-contain">
+            </div>
+            <div class="p-5 md:p-6">
+              <h2 class="text-lg font-semibold">Final Product</h2>
+              <p class="mt-2 text-slate-600 text-sm">
+                Ảnh demo sản phẩm hoàn thiện của nhóm. Bạn có thể thay ảnh này bằng file cuối cùng
+                hoặc cập nhật động bằng JS: <code class="bg-slate-100 px-1 rounded text-xs">document.getElementById('product-latest').src = 'URL_mới'</code>.
+              </p>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <a href="kho.html" class="px-3 py-2 rounded-lg bg-sky-600 text-white text-sm hover:bg-sky-700">Xem kho</a>
+                <a href="trangthai.html?view=now" class="px-3 py-2 rounded-lg border border-slate-300 text-sm hover:bg-slate-50">Trạng thái hiện giờ</a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
 
-  <!-- FOOTER -->
+  <!-- FOOTER (giữ nguyên, chỉ đổi email) -->
   <footer class="mt-16 border-t border-slate-200 bg-white">
     <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div class="grid md:grid-cols-4 gap-8">
@@ -163,7 +200,7 @@
         <div>
           <div class="font-medium mb-2">Liên hệ</div>
           <ul class="space-y-1 text-sm">
-            <li>Email: team@example.com</li>
+            <li>Email: <a class="hover:text-sky-700" href="mailto:contact@medicate.com.vn">contact@medicate.com.vn</a></li>
           </ul>
         </div>
       </div>
@@ -171,6 +208,7 @@
     </div>
   </footer>
 
+  <!-- JS -->
   <script src="assets/js/nav.js"></script>
 </body>
 </html>
