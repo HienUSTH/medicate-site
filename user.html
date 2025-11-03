@@ -10,11 +10,6 @@
 <body class="bg-slate-50 text-slate-800">
   <main class="max-w-md mx-auto px-4 py-12">
     <h1 class="text-2xl md:text-3xl font-semibold text-center">Người dùng</h1>
-    <div class="mt-6 grid grid-cols-2 gap-3">
-      <a href="user.html?tab=signup" class="text-center rounded-xl border px-4 py-3 hover:bg-slate-100">Đăng ký</a>
-      <a href="user.html?tab=signin" class="text-center rounded-xl border px-4 py-3 hover:bg-slate-100">Đăng nhập</a>
-    </div>
-
     <div id="authTabs" class="mt-8 rounded-2xl border p-6 bg-white">
       <div class="flex gap-4">
         <button data-tab="signup" class="auth-tab px-4 py-2 rounded-lg bg-sky-600 text-white">Đăng ký</button>
@@ -87,7 +82,7 @@
     tabBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
     // 2. Cấu hình endpoint backend
-    const API_BASE = 'http://localhost:3000/api/auth'; // đổi thành domain thật khi deploy
+    const API_BASE = 'https://medicate-backend.onrender.com'; // đổi thành domain thật khi deploy
 
     // 3. Xử lý ĐĂNG KÝ
     signupForm.addEventListener('submit', async (e) => {
