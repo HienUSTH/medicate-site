@@ -82,7 +82,7 @@
     tabBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
     // 2. Cấu hình endpoint backend
-    const API_BASE = 'https://smart-medicine-backend.onrender.com/api/auth'; // đổi thành domain thật khi deploy
+    const API_BASE = 'https://medicate-backend.onrender.com/api/auth'; // đổi thành domain thật khi deploy
 
     // 3. Xử lý ĐĂNG KÝ
     signupForm.addEventListener('submit', async (e) => {
@@ -144,7 +144,7 @@
           msg.className = 'text-xs text-green-600';
           // ví dụ chuyển sang trang dashboard
           setTimeout(() => {
-            window.location.href = 'dashboard.html';
+            window.location.href = 'index.html';
           }, 700);
         }
       } catch (err) {
