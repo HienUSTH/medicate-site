@@ -1,5 +1,5 @@
 /***********************
- * KHO – Bảng + Danh mục + Local AI (keep baseline, add: fields/sort/compare)
+ * KHO – Bảng + Danh mục + Local AI + ADD/SỬA/XOÁ + THÙNG RÁC + OVERRIDE
  ***********************/
 
 /* ===== CONFIG ===== */
@@ -8,6 +8,9 @@ const CSV_URLS = {
   MedData:       `https://docs.google.com/spreadsheets/d/${FILE_ID}/export?format=csv&gid=0`,
   DanhMucSearch: `https://docs.google.com/spreadsheets/d/${FILE_ID}/export?format=csv&gid=1041829227`
 };
+const LS_KHO_CUSTOM = 'MEDICATE_KHO_CUSTOM_V1';
+const LS_KHO_OVR    = 'MEDICATE_KHO_OVERRIDE_V1'; // map key -> {hidden, alias, soLuong, hsd, ngayNhap}
+const LS_KHO_TRASH  = 'MEDICATE_KHO_TRASH_V1';    // list events
 
 /* ===== UTILS ===== */
 function parseCSV(url){ return fetch(url).then(r=>r.text()).then(t=>Papa.parse(t,{header:true,skipEmptyLines:true}).data); }
@@ -31,56 +34,140 @@ function parseVNDate(raw){
   return null;
 }
 const fmtDaysLeft=v=>(v===''||v==null)?'':(v<=0?`quá hạn ${Math.abs(v)} ngày`:`${v} ngày`);
+const fmtVN=(d)=>{ const x=parseVNDate(d); return x?x.format('DD/MM/YYYY'):''; };
 const sum=a=>a.reduce((s,x)=>s+(Number(x)||0),0);
-
-// Levenshtein
-function lev(a,b){ const m=a.length,n=b.length; if(!m)return n; if(!n)return m;
-  const d=new Array(n+1); for(let j=0;j<=n;j++) d[j]=j;
-  for(let i=1;i<=m;i++){ let p=d[0]; d[0]=i; for(let j=1;j<=n;j++){ const t=d[j];
-    d[j]=Math.min(d[j]+1,d[j-1]+1,p+(a[i-1]===b[j-1]?0:1)); p=t; } }
-  return d[n];
+function statusFromDaysLeft(d){
+  if (d==null) return 'Còn hạn';
+  if (d<=0) return 'Hết hạn';
+  if (d<=30) return 'Sắp hết hạn';
+  return 'Còn hạn';
 }
-function statusBadge(st){
-  const map={'Hết hạn':'bg-rose-100 text-rose-700 border-rose-200','Sắp hết hạn':'bg-amber-100 text-amber-800 border-amber-200','Còn hạn':'bg-emerald-100 text-emerald-700 border-emerald-200'};
-  const dot=st==='Hết hạn'?'bg-rose-500':st==='Sắp hết hạn'?'bg-amber-500':'bg-emerald-500';
-  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${map[st]||'bg-slate-100'}"><span class="inline-block w-1.5 h-1.5 rounded-full ${dot}"></span>${st}</span>`;
+function rowKeyOf(r){
+  // Khóa ổn định cho override/trash (áp dụng cả sheet & custom)
+  return `${nn(r.ten)}|${nn(r.alias)}|${fmtVN(r.hsd)}|${fmtVN(r.ngayNhap)}|${r._src||'unknown'}`;
 }
+function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
 
 /* ===== STATE ===== */
-let RAW={ MedData:[], DanhMucSearch:[] };
+let RAW={ MedData:[], DanhMucSearch:[] }; // sau khi merge override & custom
+let SHEET_ROWS=[];   // bản gốc từ sheet (để tính key)
 let VIEW=[];
 let CATALOG=[];
-let NAME_INDEX=[];
+let NAME_INDEX=[];   // <-- chỉ khai báo 1 lần ở đây
 let showMissingOnly=false;
 let CHIP_BASE=new Map();
 let MAX_QTY=0;
 
-const STOPWORDS=new Set(['thuoc','cac','nhung','va','hoac','trong','ngay','thang','nam','con','het','han','sap','hsd','sl','so','luong','ton','kho','danh','sach','nao','nhap','ma','code','sp','la','nhieu','it','duoi','tren','<=','>=','<','>','=','trong vong']);
+/* ===== STORAGE ===== */
+function loadCustom(){ try{ return JSON.parse(localStorage.getItem(LS_KHO_CUSTOM)||'[]'); }catch{ return []; } }
+function saveCustom(list){ try{ localStorage.setItem(LS_KHO_CUSTOM, JSON.stringify(list||[])); }catch{} }
+
+function loadOvr(){ try{ return JSON.parse(localStorage.getItem(LS_KHO_OVR)||'{}'); }catch{ return {}; } }
+function saveOvr(map){ try{ localStorage.setItem(LS_KHO_OVR, JSON.stringify(map||{})); }catch{} }
+
+function loadTrash(){ try{ return JSON.parse(localStorage.getItem(LS_KHO_TRASH)||'[]'); }catch{ return []; } }
+function saveTrash(list){ try{ localStorage.setItem(LS_KHO_TRASH, JSON.stringify(list||[])); }catch{} }
+
+function pushTrash(evt){
+  const list=loadTrash();
+  list.unshift({ ts:new Date().toISOString(), ...evt });
+  saveTrash(list);
+}
 
 /* ===== LOAD ===== */
 async function loadAll(){
   const [med,dm]=await Promise.all([parseCSV(CSV_URLS.MedData),parseCSV(CSV_URLS.DanhMucSearch)]);
   const today=dayjs().startOf('day');
 
-  RAW.MedData=med.map(r=>{
+  // Parse sheet rows (base)
+  SHEET_ROWS = med.map(r=>{
     const hsd=parseVNDate(r['HSD']);
     const ngayNhap=parseVNDate(r['NGÀY NHẬP']||r['Ngày nhập']||r['NGAY NHAP']);
     const soLuong=Number(String(r['SỐ LƯỢNG']||r['Số lượng']||r['SO LUONG']).replace(/[^\d.-]/g,''))||0;
-    const d=hsd?hsd.startOf('day').diff(today,'day'):null; // 0 = hết hạn
-    const trangThai=(d==null)?'Còn hạn':(d<=0?'Hết hạn':(d<=30?'Sắp hết hạn':'Còn hạn'));
-    return { ten:r['TÊN THUỐC GỐC']||r['TEN THUOC GOC']||r['Tên thuốc gốc']||'', alias:r['ALIAS']||'', soLuong,
-      hsd:hsd?hsd.format('DD/MM/YYYY'):(r['HSD']||''), ngayNhap:ngayNhap?ngayNhap.format('DD/MM/YYYY'):(r['NGÀY NHẬP']||r['Ngày nhập']||''),
-      daysLeft:(d==null)?'':d, trangThai };
+    return {
+      ten:r['TÊN THUỐC GỐC']||r['TEN THUOC GOC']||r['Tên thuốc gốc']||'',
+      alias:r['ALIAS']||'',
+      soLuong,
+      hsd:hsd?hsd.format('DD/MM/YYYY'):(r['HSD']||''),
+      ngayNhap:ngayNhap?ngayNhap.format('DD/MM/YYYY'):(r['NGÀY NHẬP']||r['Ngày nhập']||''),
+      _src:'sheet'
+    };
   });
+
+  // Apply overrides
+  const OVR = loadOvr(); // key -> patch/hidden
+  const appliedSheet = [];
+  for (const r of SHEET_ROWS){
+    const base = deepClone(r);
+    const key = rowKeyOf(base);
+    const patch = OVR[key];
+    if (patch && patch.hidden) continue; // bị ẩn (xóa mềm)
+    if (patch){
+      if (patch.alias!=null)    base.alias = patch.alias;
+      if (patch.soLuong!=null)  base.soLuong = patch.soLuong;
+      if (patch.hsd!=null)      base.hsd = fmtVN(patch.hsd)||patch.hsd;
+      if (patch.ngayNhap!=null) base.ngayNhap = fmtVN(patch.ngayNhap)||patch.ngayNhap;
+    }
+    appliedSheet.push(base);
+  }
+
+  // Tính status/days cho sheet sau override
+  const medRows = appliedSheet.map(r=>{
+    const hsd=parseVNDate(r.hsd);
+    const d = hsd? hsd.startOf('day').diff(today,'day') : null;
+    return { ...r, daysLeft:(d==null)?'':d, trangThai:statusFromDaysLeft(d) };
+  });
+
+  // Custom
+  const customRaw = loadCustom();
+  const customRows = customRaw.map(x=>{
+    const h = parseVNDate(x.hsd); const n = parseVNDate(x.ngayNhap);
+    const d = h ? h.startOf('day').diff(today,'day') : null;
+    return {
+      ten: x.ten||'',
+      alias: x.alias||'',
+      soLuong: Number(x.soLuong)||0,
+      hsd: h? h.format('DD/MM/YYYY') : (x.hsd||''),
+      ngayNhap: n? n.format('DD/MM/YYYY') : (x.ngayNhap||''),
+      daysLeft: (d==null)?'':d,
+      trangThai: statusFromDaysLeft(d),
+      _src:'custom',
+      _id: x._id || null
+    };
+  });
+
+  // Gán _id nếu thiếu
+  for (const it of customRows){
+    if (!it._id){ it._id = cryptoRandomId(); }
+  }
+  // đồng bộ _id ngược về storage
+  if (customRows.length){
+    const reSave = customRows.map(({ten,alias,soLuong,hsd,ngayNhap,_id})=>({ten,alias,soLuong,hsd,ngayNhap,_id}));
+    saveCustom(reSave);
+  }
+
+  RAW.MedData=[...medRows, ...customRows];
 
   MAX_QTY=RAW.MedData.reduce((m,x)=>Math.max(m,Number(x.soLuong)||0),0);
   const slider=document.getElementById('qtySlider'), qtyVal=document.getElementById('qtyVal');
   if(slider&&qtyVal){ slider.min=0; slider.max=String(MAX_QTY||0); slider.value=String(MAX_QTY||0); qtyVal.textContent=slider.value; }
 
   RAW.DanhMucSearch=dm.map(r=>({ten:r['TÊN THUỐC GỐC']||r['TEN THUOC GOC']||r['Tên thuốc gốc']||'', alias:r['ALIAS']||''}));
+
   buildCatalog(); buildNameIndex(); applyFilters(); renderCatalog();
-  setupRandomOneChip();   // new
-  setupRandomPairChip();  // existed
+
+  setupRandomOneChip(); setupRandomPairChip();
+}
+
+function cryptoRandomId(){
+  try{
+    const c = (typeof self!=='undefined' && self.crypto) || (typeof window!=='undefined' && window.crypto) || null;
+    if (c && c.getRandomValues){
+      const a=new Uint8Array(16); c.getRandomValues(a);
+      return Array.from(a).map(x=>x.toString(16).padStart(2,'0')).join('');
+    }
+  }catch{}
+  return 'id-'+Math.random().toString(36).slice(2);
 }
 
 /* ===== CATALOG ===== */
@@ -97,7 +184,8 @@ function renderCatalog(){
   list.innerHTML=data.map(x=>`<div class="px-3 py-1.5 rounded-lg border ${x.has?'bg-emerald-50 border-emerald-200':'bg-slate-50'}">${x.ten}</div>`).join('');
 }
 
-/* ===== NAME INDEX ===== */
+/* ===== NAME INDEX (AI) ===== */
+const STOPWORDS=new Set(['thuoc','cac','nhung','va','hoac','trong','ngay','thang','nam','con','het','han','sap','hsd','sl','so','luong','ton','kho','danh','sach','nao','nhap','ma','code','sp','la','nhieu','it','duoi','tren','<=','>=','<','>','=','trong vong']);
 function buildNameIndex(){
   const seen=new Map();
   for(const it of CATALOG){
@@ -121,13 +209,10 @@ function findNamesInQuery(raw,maxN=8){
     const ok=s.includes(it.canon) || Array.from(it.aliasSet).some(a=>a && s.includes(a));
     if(ok) hits.push({canonical:it.display,canon:it.canon,has:it.has,score:0});
   }
-  // fuzzy + prefix "vitamin"
   if(!hits.length){
-    // vitamin → lấy mọi tên bắt đầu bằng "vitamin "
     if(/\bvitamin\b/.test(s) && !/\bvitamin\s*(c|b6)\b/.test(s)){
       NAME_INDEX.filter(x=>x.canon.startsWith('vitamin ')).forEach(it=>hits.push({canonical:it.display,canon:it.canon,has:it.has,score:0}));
     }
-    // typo 1–2 ký tự
     const tokens=s.split(' ').filter(t=>t.length>=5 && !STOPWORDS.has(t));
     const seenTok=new Set();
     for(const tok of tokens){
@@ -138,13 +223,25 @@ function findNamesInQuery(raw,maxN=8){
       }
     }
   }
-  // unique theo canon
   const seenC=new Set(), out=[];
   for(const h of hits){ if(!seenC.has(h.canon)){ seenC.add(h.canon); out.push(h); if(out.length>=maxN) break; } }
   return out;
 }
+function lev(a,b){ const m=a.length,n=b.length; if(!m)return n; if(!n)return m;
+  const d=new Array(n+1); for(let j=0;j<=n;j++) d[j]=j;
+  for(let i=1;i<=m;i++){ let p=d[0]; d[0]=i; for(let j=1;j<=n;j++){ const t=d[j];
+    d[j]=Math.min(d[j]+1,d[j-1]+1,p+(a[i-1]===b[j-1]?0:1)); p=t; } }
+  return d[n];
+}
 
-/* ===== TABLE FILTER (UI) ===== */
+/* ===== STATUS BADGE ===== */
+function statusBadge(st){
+  const map={'Hết hạn':'bg-rose-100 text-rose-700 border-rose-200','Sắp hết hạn':'bg-amber-100 text-amber-800 border-amber-200','Còn hạn':'bg-emerald-100 text-emerald-700 border-emerald-200'};
+  const dot=st==='Hết hạn'?'bg-rose-500':st==='Sắp hết hạn'?'bg-amber-500':'bg-emerald-500';
+  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${map[st]||'bg-slate-100'}"><span class="inline-block w-1.5 h-1.5 rounded-full ${dot}"></span>${st}</span>`;
+}
+
+/* ===== FILTER & TABLE RENDER ===== */
 function getActiveFilter(){ const el=document.querySelector('.filter-chip.active'); return el?.dataset.filter||'all'; }
 function applyFilters(){
   const q=nn(document.getElementById('searchInput')?.value||'');
@@ -165,24 +262,330 @@ function applyFilters(){
 function renderTable(){
   const tbody=document.getElementById('tableBody'); if(!tbody) return;
   if(!VIEW.length){ tbody.innerHTML=`<tr><td colspan="7" class="text-center py-6 text-slate-500">Không có dữ liệu</td></tr>`; return; }
-  tbody.innerHTML=VIEW.map((r,i)=>`
+  tbody.innerHTML=VIEW.map((r,i)=>{
+    const key=rowKeyOf(r);
+    const isManual=r._src==='custom';
+    return `
     <tr class="${i%2?'bg-white':'bg-slate-50/40'} hover:bg-sky-50">
-      <td class="py-2.5 px-3">${r.ten}</td>
+      <td class="py-2.5 px-3">
+        ${r.ten}
+        ${isManual?` <span class="text-[11px] text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-full ml-1">manual</span>`:''}
+      </td>
       <td class="py-2.5 px-3 bg-sky-50/50"><div class="truncate max-w-[28ch] text-slate-700" title="${r.alias}">${r.alias}</div></td>
       <td class="py-2.5 px-3 text-right bg-slate-50">${r.soLuong}</td>
       <td class="py-2.5 px-3 whitespace-nowrap bg-indigo-50/40">${r.hsd}</td>
       <td class="py-2.5 px-3 whitespace-nowrap bg-indigo-50/20">${r.ngayNhap}</td>
       <td class="py-2.5 px-3 text-center whitespace-nowrap">${statusBadge(r.trangThai)}</td>
-      <td class="py-2.5 px-3 text-right whitespace-nowrap bg-slate-50/60 mono">${fmtDaysLeft(r.daysLeft)}</td>
-    </tr>
-  `).join('');
+      <td class="py-2.5 px-3 text-right whitespace-nowrap bg-slate-50/60 mono">
+        ${fmtDaysLeft(r.daysLeft)}
+        <div class="mt-1 flex justify-end gap-1">
+          <button class="btn text-xs px-2 py-1 rounded border border-slate-300 hover:bg-slate-100" data-action="edit" data-key="${encodeURIComponent(key)}">Sửa</button>
+          <button class="btn text-xs px-2 py-1 rounded border border-rose-300 text-rose-700 hover:bg-rose-50" data-action="del"  data-key="${encodeURIComponent(key)}">Xoá</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // wire buttons
+  tbody.querySelectorAll('button[data-action="edit"]').forEach(b=>b.addEventListener('click',onEditRow));
+  tbody.querySelectorAll('button[data-action="del"]').forEach(b=>b.addEventListener('click',onDeleteRow));
 }
 
-/* ===== CHIP COLOR ===== */
-const CHIP_ACTIVE={all:'bg-sky-600 text-white border-sky-600',ok:'bg-emerald-600 text-white border-emerald-600',soon:'bg-amber-500 text-white border-amber-500',expired:'bg-rose-600 text-white border-rose-600'};
-function setActiveChip(btn){
-  document.querySelectorAll('.filter-chip').forEach(b=>{ const base=CHIP_BASE.get(b)||b.className; CHIP_BASE.set(b,base.replace(/\s?active\b/,'')); b.className=CHIP_BASE.get(b); });
-  btn.className=(CHIP_BASE.get(btn)||btn.className)+' active '+(CHIP_ACTIVE[btn.dataset.filter]||CHIP_ACTIVE.all);
+/* ===== EDIT / DELETE / BULK ===== */
+function findRowByKey(key){
+  return RAW.MedData.find(r=>rowKeyOf(r)===key);
+}
+
+function onEditRow(e){
+  const key=decodeURIComponent(e.currentTarget.dataset.key);
+  const r=findRowByKey(key); if(!r) return alert('Không tìm thấy bản ghi.');
+  openEditModal(r, key);
+}
+
+function onDeleteRow(e){
+  const key=decodeURIComponent(e.currentTarget.dataset.key);
+  const r=findRowByKey(key); if(!r) return alert('Không tìm thấy bản ghi.');
+  if(!confirm(`Xoá bản ghi này?\n${r.ten} (${r.alias||'không alias'})`)) return;
+
+  if(r._src==='custom'){
+    // remove from custom list
+    const list=loadCustom();
+    const idx=list.findIndex(x=>(x._id && r._id && x._id===r._id) || (nn(x.ten)===nn(r.ten) && nn(x.alias)===nn(r.alias) && fmtVN(x.hsd)===fmtVN(r.hsd) && fmtVN(x.ngayNhap)===fmtVN(r.ngayNhap)));
+    if(idx>=0){
+      const removed=list.splice(idx,1)[0];
+      saveCustom(list);
+      pushTrash({ type:'custom', action:'delete', before:removed });
+    }
+  }else{
+    // sheet: override hidden=true
+    const ovr=loadOvr();
+    const cur=ovr[key]||{};
+    if(cur.hidden!==true){
+      const before=findOriginalSheetRowByKey(key);
+      ovr[key]={...cur, hidden:true};
+      saveOvr(ovr);
+      pushTrash({ type:'sheet', action:'delete', key, before });
+    }
+  }
+  loadAll();
+}
+
+function onBulkDelete(){
+  if(!VIEW.length) return alert('Không có bản ghi trong bộ lọc hiện tại.');
+  if(!confirm(`Xoá ${VIEW.length} bản ghi đang hiển thị?`)) return;
+  const ovr=loadOvr();
+
+  // xoá custom trong VIEW
+  const customList=loadCustom();
+  const survivors = customList.filter(x=>{
+    return !VIEW.some(r=>{
+      if(r._src!=='custom') return false;
+      return (x._id && r._id && x._id===r._id) || (nn(x.ten)===nn(r.ten) && nn(x.alias)===nn(r.alias) && fmtVN(x.hsd)===fmtVN(r.hsd) && fmtVN(x.ngayNhap)===fmtVN(r.ngayNhap));
+    });
+  });
+  // ghi vào thùng rác các custom bị xoá
+  customList.forEach(x=>{
+    const removed = VIEW.find(r=>{
+      if(r._src!=='custom') return false;
+      return (x._id && r._id && x._id===r._id) || (nn(x.ten)===nn(r.ten) && nn(x.alias)===nn(r.alias) && fmtVN(x.hsd)===fmtVN(r.hsd) && fmtVN(x.ngayNhap)===fmtVN(r.ngayNhap));
+    });
+    if(removed) pushTrash({ type:'custom', action:'delete', before:x });
+  });
+  saveCustom(survivors);
+
+  // xoá sheet bằng override
+  for (const r of VIEW){
+    if(r._src==='custom') continue;
+    const key=rowKeyOf(r);
+    const cur=ovr[key]||{};
+    if(cur.hidden!==true){
+      const before=findOriginalSheetRowByKey(key);
+      ovr[key]={...cur, hidden:true};
+      pushTrash({ type:'sheet', action:'delete', key, before });
+    }
+  }
+  saveOvr(ovr);
+
+  loadAll();
+}
+
+function findOriginalSheetRowByKey(key){
+  return SHEET_ROWS.find(r=>rowKeyOf(r)===key) || null;
+}
+
+/* ===== EDIT MODAL ===== */
+function openEditModal(row, key){
+  const wrap=document.createElement('div');
+  wrap.className='modal-backdrop';
+  wrap.innerHTML=`
+    <div class="bg-white w-[min(680px,92vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="text-lg font-semibold">Sửa thông tin</div>
+        <button class="btn ml-auto px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm" data-x="close">Đóng</button>
+      </div>
+      <form class="space-y-2">
+        <div>
+          <label class="text-sm">Tên thuốc gốc <span class="text-rose-500">*</span></label>
+          <input name="ten" value="${escapeHtml(row.ten)}" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" ${row._src==='sheet'?'':'autofocus'}/>
+          <p class="text-xs text-slate-500 mt-1">${row._src==='sheet'?'(Tên gốc có thể sửa: sẽ tạo override)': '(Manual: sửa trực tiếp)'}</p>
+        </div>
+        <div>
+          <label class="text-sm">Alias</label>
+          <input name="alias" value="${escapeHtml(row.alias||'')}" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"/>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="text-sm">Số lượng</label>
+            <input name="soLuong" type="number" min="0" value="${Number(row.soLuong)||0}" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"/>
+          </div>
+          <div>
+            <label class="text-sm">HSD (DD/MM/YYYY)</label>
+            <input name="hsd" value="${escapeHtml(row.hsd||'')}" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"/>
+          </div>
+          <div>
+            <label class="text-sm">Ngày nhập (DD/MM/YYYY)</label>
+            <input name="ngayNhap" value="${escapeHtml(row.ngayNhap||'')}" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"/>
+          </div>
+        </div>
+
+        ${row._src==='sheet'?`
+          <div class="p-2 rounded-lg bg-slate-50 text-xs text-slate-600">
+            Sửa mục từ Sheets sẽ được lưu dưới dạng <b>override</b> cục bộ (không viết ngược lên Sheets).
+          </div>
+        `:''}
+
+        <div class="pt-2 flex items-center gap-2">
+          <button class="btn px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700" data-x="save">Lưu</button>
+          <button class="btn px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50" data-x="cancel">Huỷ</button>
+          <span class="ml-auto text-xs text-slate-500">${row._src==='custom'?'Manual':'Sheets (override)'}</span>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(wrap);
+
+  const close=()=>wrap.remove();
+  wrap.addEventListener('click',(e)=>{ if(e.target===wrap) close(); });
+  wrap.querySelector('[data-x="close"]').addEventListener('click',close);
+  wrap.querySelector('[data-x="cancel"]').addEventListener('click',(e)=>{ e.preventDefault(); close(); });
+
+  wrap.querySelector('[data-x="save"]').addEventListener('click',(e)=>{
+    e.preventDefault();
+    const f = e.currentTarget.closest('form');
+    const ten = f.ten.value.trim();
+    const alias = f.alias.value.trim();
+    const soLuong = Number(f.soLuong.value||0);
+    const hsdStr = f.hsd.value.trim();
+    const ngayStr = f.ngayNhap.value.trim();
+
+    if(!ten){ alert('Tên thuốc gốc là bắt buộc'); return; }
+    if(soLuong<0 || Number.isNaN(soLuong)){ alert('Số lượng không hợp lệ'); return; }
+    if(hsdStr && !parseVNDate(hsdStr)){ alert('HSD không hợp lệ (DD/MM/YYYY)'); return; }
+    if(ngayStr && !parseVNDate(ngayStr)){ alert('Ngày nhập không hợp lệ (DD/MM/YYYY)'); return; }
+
+    if(row._src==='custom'){
+      const list=loadCustom();
+      const idx=list.findIndex(x=>x._id===row._id);
+      if(idx>=0){
+        const before=deepClone(list[idx]);
+        list[idx]={...list[idx], ten, alias, soLuong, hsd: fmtVN(hsdStr)||hsdStr, ngayNhap: fmtVN(ngayStr)||ngayStr};
+        saveCustom(list);
+        pushTrash({ type:'custom', action:'edit', before, after:deepClone(list[idx]) });
+      }
+    }else{
+      const ovr=loadOvr();
+      const patch=ovr[key]||{};
+      const before=findRowByKey(key); // sau override hiện tại
+      const after={...before, ten, alias, soLuong, hsd: fmtVN(hsdStr)||hsdStr, ngayNhap: fmtVN(ngayStr)||ngayStr};
+      // Lưu override
+      ovr[key]={ ...patch, alias, soLuong, hsd: after.hsd, ngayNhap: after.ngayNhap };
+      saveOvr(ovr);
+      pushTrash({ type:'sheet', action:'edit', key, before: {ten:before.ten, alias:patch.alias??before.alias, soLuong:patch.soLuong??before.soLuong, hsd:patch.hsd??before.hsd, ngayNhap:patch.ngayNhap??before.ngayNhap}, after: {ten:after.ten, alias:after.alias, soLuong:after.soLuong, hsd:after.hsd, ngayNhap:after.ngayNhap} });
+    }
+    close();
+    loadAll();
+  });
+}
+
+/* ===== ADD MANUAL (Form ở sidebar) ===== */
+function wireAddForm(){
+  const f = document.getElementById('formAddDrug'); if(!f) return;
+  const elTen = document.getElementById('addTen');
+  const elAlias = document.getElementById('addAlias');
+  const elSL = document.getElementById('addSL');
+  const elHSD = document.getElementById('addHSD');
+  const elNgay = document.getElementById('addNgayNhap');
+  const msg = document.getElementById('addMsg');
+  const btnClear = document.getElementById('btnClearAdd');
+
+  const setMsg = (t, ok=true)=>{
+    if(!msg) return;
+    msg.textContent = t || '';
+    msg.className = 'text-xs ml-auto ' + (ok ? 'text-emerald-700' : 'text-rose-600');
+    if(t) setTimeout(()=>{ msg.textContent=''; }, 2500);
+  };
+
+  btnClear?.addEventListener('click', ()=>{
+    elTen.value=''; elAlias.value=''; elSL.value=''; elHSD.value=''; elNgay.value='';
+    setMsg('Đã xoá form');
+  });
+
+  f.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const ten = String(elTen.value||'').trim();
+    const alias = String(elAlias.value||'').trim();
+    const soLuong = Number(elSL.value||0);
+    const hsdStr = String(elHSD.value||'').trim();
+    const ngayStr = String(elNgay.value||'').trim();
+
+    if(!ten){ setMsg('Tên thuốc gốc là bắt buộc', false); elTen.focus(); return; }
+    if(soLuong<0 || Number.isNaN(soLuong)){ setMsg('Số lượng không hợp lệ', false); elSL.focus(); return; }
+    if(hsdStr && !parseVNDate(hsdStr)){ setMsg('HSD không hợp lệ (DD/MM/YYYY)', false); elHSD.focus(); return; }
+    if(ngayStr && !parseVNDate(ngayStr)){ setMsg('Ngày nhập không hợp lệ (DD/MM/YYYY)', false); elNgay.focus(); return; }
+
+    const list = loadCustom();
+    const item = {
+      _id: cryptoRandomId(),
+      ten, alias, soLuong,
+      hsd: fmtVN(hsdStr)||hsdStr,
+      ngayNhap: fmtVN(ngayStr)||ngayStr,
+      createdAt: new Date().toISOString()
+    };
+    list.push(item);
+    saveCustom(list);
+
+    setMsg('Đã thêm vào kho (cục bộ)');
+    elTen.value=''; elAlias.value=''; elSL.value=''; elHSD.value=''; elNgay.value='';
+    loadAll();
+  });
+}
+
+/* ===== TRASH MODAL ===== */
+function openTrash(){
+  const modal=document.getElementById('trashModal');
+  const body=document.getElementById('trashBody');
+  if(!modal||!body) return;
+  const list=loadTrash();
+
+  if(!list.length){
+    body.innerHTML=`<tr><td colspan="5" class="px-3 py-3 text-slate-500">Thùng rác trống</td></tr>`;
+  }else{
+    body.innerHTML=list.map((ev,idx)=>{
+      const when=new Date(ev.ts).toLocaleString();
+      const type=ev.type==='custom'?'Manual':'Sheets';
+      const act=ev.action==='delete'?'Xoá': (ev.action==='edit'?'Sửa':'—');
+      const name = (ev.before?.ten || ev.after?.ten || ev.key || '');
+      const alias = (ev.before?.alias || ev.after?.alias || '');
+      return `<tr class="${idx%2?'bg-white':'bg-slate-50/50'}">
+        <td class="px-3 py-2 whitespace-nowrap">${when}</td>
+        <td class="px-3 py-2">${type}</td>
+        <td class="px-3 py-2">${escapeHtml(name)} <span class="text-slate-500">/ ${escapeHtml(alias)}</span></td>
+        <td class="px-3 py-2">${act}</td>
+        <td class="px-3 py-2 text-right">
+          ${ev.action==='delete'?`<button class="btn text-xs px-2 py-1 rounded border border-emerald-300 text-emerald-700 hover:bg-emerald-50" data-tr-restore="${idx}">Khôi phục</button>`:''}
+          <button class="btn text-xs px-2 py-1 rounded border border-rose-300 text-rose-700 hover:bg-rose-50" data-tr-purge="${idx}">Xoá vĩnh viễn</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // wire
+  body.querySelectorAll('[data-tr-restore]').forEach(b=>b.addEventListener('click', (e)=>{
+    const idx=Number(e.currentTarget.dataset.trRestore);
+    restoreTrash(idx);
+  }));
+  body.querySelectorAll('[data-tr-purge]').forEach(b=>b.addEventListener('click', (e)=>{
+    const idx=Number(e.currentTarget.dataset.trPurge);
+    purgeTrash(idx);
+  }));
+
+  modal.classList.remove('hidden');
+}
+function closeTrash(){
+  document.getElementById('trashModal')?.classList.add('hidden');
+}
+function restoreTrash(index){
+  const list=loadTrash(); const ev=list[index]; if(!ev) return;
+  if(ev.type==='custom'){
+    if(ev.action==='delete' && ev.before){
+      const cur=loadCustom(); cur.push(ev.before); saveCustom(cur);
+    }
+  }else if(ev.type==='sheet'){
+    if(ev.action==='delete'){
+      const ovr=loadOvr(); if(ovr[ev.key]){ delete ovr[ev.key].hidden; if(Object.keys(ovr[ev.key]).length===0) delete ovr[ev.key]; saveOvr(ovr); }
+    }
+  }
+  // remove event
+  list.splice(index,1); saveTrash(list);
+  openTrash(); // rerender
+  loadAll();
+}
+function purgeTrash(index){
+  const list=loadTrash(); list.splice(index,1); saveTrash(list);
+  openTrash();
+}
+function emptyTrash(){
+  if(!confirm('Xoá vĩnh viễn toàn bộ thùng rác?')) return;
+  saveTrash([]); openTrash();
 }
 
 /* ===== LOCAL AI (Kho) ===== */
@@ -200,7 +603,7 @@ function parseDaysCompare(s){
   if (/(>=|≥|\btren\b|\blon hon\b|\bhon\b|\bnhi(ieu|ều)\s*hon\b|\btoi thieu\b)/.test(n)) return '>=';
   if (/<\s*\d/.test(s)) return '<';
   if (/>\s*\d/.test(s)) return '>';
-  return '<='; // mặc định: trong/≤
+  return '<=';
 }
 function parseDaysIntent(s0){
   let s=' '+nn(s0)+' ';
@@ -208,10 +611,8 @@ function parseDaysIntent(s0){
   const days=parseFlexibleDays(s);
   const cmp=parseDaysCompare(s);
   if (/\bqua han\b/.test(s)) return days!=null?{mode:'overdue',cmp,days}:{need:true,hint:'quá hạn'};
-  // “hết hạn trong …” hay “sắp hết hạn …” → hiểu là tới HSD (chưa quá hạn)
   if (/\b(het han|hsd|sap het han)\b/.test(s) && days!=null) return {mode:'to_expiry',cmp,days};
   if (/\bsap het han\b/.test(s) && days==null) return {mode:'to_expiry',cmp:'<=',days:30};
-  // “còn hạn trên …”
   if (/\bcon han\b/.test(s) && days!=null) return {mode:'to_expiry',cmp,days};
   return null;
 }
@@ -294,26 +695,24 @@ function renderFieldsTable(rows, fields){
 function localAnswer(qRaw){
   const q=String(qRaw||'').trim(); if(!q) return { ok:true, type:'text', content:'Bạn hãy nhập câu hỏi nhé.' };
   const nameHits=findNamesInQuery(q,16);
-  let namesCanon=nameHits.map(h=>h.canon); // bao gồm fuzzy
+  let namesCanon=nameHits.map(h=>h.canon);
 
   const s=nn(q);
   const daysIntent=parseDaysIntent(q);
   const qtyIntent=parseQtyIntent(q);
-  const fieldsWant=parseFieldSelect(q);
+  const fieldsWant=parseFieldSelect(q); // <-- giữ một lần duy nhất
   const sortWant=parseSortIntent(q);
 
   let state=null;
   if (/\bqua han\b/.test(s)) state='expired';
   else if (/\bsap het han\b/.test(s)) state='soon';
   else if (/\bcon han\b/.test(s)) state='ok';
-  // “các thuốc hết hạn/…” không có số → chỉ dùng state
   const listy=/\b(cac|danh sach|liet ke|thuoc nao)\b/.test(s);
   const useDays=(daysIntent && daysIntent.need && !listy)? null : daysIntent;
   if (daysIntent && daysIntent.need && !listy){
     return { ok:true, type:'text', content:`Bạn đang hỏi về "${daysIntent.hint}" nhưng chưa nêu mốc ngày. Ví dụ: "hết HSD trong 14 ngày", "quá hạn ≥ 7 ngày".` };
   }
 
-  // nếu hỏi “có trong kho không / còn bao nhiêu” cho 1 tên
   if (namesCanon.length && /\b(con bao nhieu|bao nhieu|co trong kho)\b/.test(s)){
     const rows=filterRowsByCriteria({ names:namesCanon });
     if(!rows.length) return { ok:true, type:'text', content:`${nameHits.map(h=>h.canonical).join(', ')} — chưa có trong kho.` };
@@ -328,11 +727,9 @@ function localAnswer(qRaw){
     return { ok:true, type:'text', content: lines.join('\n') };
   }
 
-  // tiêu chí
   const criteria={ names:namesCanon, days:useDays||null, qty:qtyIntent||null, state };
   let rows=filterRowsByCriteria(criteria);
 
-  // không có kết quả
   if(!rows.length){
     if(namesCanon.length){
       const inStockCanon=new Set(RAW.MedData.map(r=>nn(r.ten)));
@@ -348,7 +745,6 @@ function localAnswer(qRaw){
     return { ok:true, type:'text', content:`Không có kết quả phù hợp${bits.length?' — '+bits.join(' — '):''}.` };
   }
 
-  // Sắp xếp theo yêu cầu
   if(sortWant){
     if(sortWant.key==='hsd'){
       const today=dayjs().startOf('day');
@@ -359,11 +755,10 @@ function localAnswer(qRaw){
       });
     }else if(sortWant.key==='sl'){
       rows.sort((a,b)=> sortWant.dir==='asc' ? ((Number(a.soLuong)||0)-(Number(b.soLuong)||0)) : ((Number(b.soLuong)||0)-(Number(a.soLuong)||0)) );
-    }else{ // tên
+    }else{
       rows.sort((a,b)=> sortWant.dir==='asc' ? a.ten.localeCompare(b.ten) : b.ten.localeCompare(a.ten) );
     }
   }else{
-    // default: nếu dính HSD/trạng thái → sort theo HSD gần nhất
     const askHSD = !!criteria.days || !!criteria.state || /\b(hsd|han|het han|sap het han|qua han)\b/.test(s);
     if(askHSD){
       const today=dayjs().startOf('day');
@@ -377,14 +772,12 @@ function localAnswer(qRaw){
     }
   }
 
-  // Chỉ hiển thị cột được yêu cầu?
   if (fieldsWant.length){
     const table=renderFieldsTable(rows, fieldsWant);
     const ttl=`${nameHits.map(h=>h.canonical).join(' + ') || 'Kết quả'} — ${rows.length} lô`;
     return { ok:true, type:'table', title:ttl, headers:table.headers, rows:table.rows };
   }
 
-  // Tổng hợp theo tên nếu có từ khóa “tổng”
   const wantSummary = /\b(tong|tong hop|gom|gop|aggregate|sum)\b/.test(s) || /: *sl *,? *hsd/i.test(q);
   if (wantSummary){
     const byName=new Map();
@@ -405,7 +798,6 @@ function localAnswer(qRaw){
     return { ok:true, type:'table', title:ttl, headers, rows:out };
   }
 
-  // Bảng mặc định (đầy đủ)
   const headers=['TÊN THUỐC','ALIAS','SỐ LƯỢNG','HSD','NGÀY NHẬP','TRẠNG THÁI','CÒN (ngày)'];
   const out=rows.map(r=>[r.ten,r.alias,String(r.soLuong),r.hsd,r.ngayNhap,r.trangThai,(r.daysLeft===''?'':String(r.daysLeft))]);
   const ttl=`${nameHits.map(h=>h.canonical).join(' + ') || 'Kết quả'} — ${rows.length} lô / ${new Set(rows.map(r=>r.ten)).size} tên, tổng SL ${sum(rows.map(r=>Number(r.soLuong)||0))}`;
@@ -474,14 +866,28 @@ function initEvents(){
     document.getElementById('chatKho').classList.remove('hidden');
     document.getElementById('chatThuoc').classList.add('hidden');
   });
+
+  // Bulk delete + Trash modal
+  document.getElementById('btnBulkDelete')?.addEventListener('click', onBulkDelete);
+  document.getElementById('btnOpenTrash')?.addEventListener('click', openTrash);
+  document.getElementById('btnCloseTrash')?.addEventListener('click', closeTrash);
+  document.getElementById('btnEmptyTrash')?.addEventListener('click', emptyTrash);
+
+  wireAddForm();
 }
+const CHIP_ACTIVE={all:'bg-sky-600 text-white border-sky-600',ok:'bg-emerald-600 text-white border-emerald-600',soon:'bg-amber-500 text-white border-amber-500',expired:'bg-rose-600 text-white border-rose-600'};
+function setActiveChip(btn){
+  document.querySelectorAll('.filter-chip').forEach(b=>{ const base=CHIP_BASE.get(b)||b.className; CHIP_BASE.set(b,base.replace(/\s?active\b/,'')); b.className=CHIP_BASE.get(b); });
+  btn.className=(CHIP_BASE.get(btn)||btn.className)+' active '+(CHIP_ACTIVE[btn.dataset.filter]||CHIP_ACTIVE.all);
+}
+
+/* ===== BOOT ===== */
 initEvents();
 loadAll();
 
-// Cuối kho.js (sau initEvents(); loadAll();)
+// ensure tabs for drug panel
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof window.wireTabsForThuoc === 'function') {
     window.wireTabsForThuoc();
   }
 });
-
