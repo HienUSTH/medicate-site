@@ -63,7 +63,24 @@
             </div>
           </div>
 
+          <!-- Kho thuốc phải nằm TRƯỚC Trạng thái -->
           <a href="kho.html" class="py-2 text-sky-700 font-medium">Kho thuốc</a>
+
+          <!-- Nhóm Trạng thái (đứng SAU Kho thuốc) -->
+          <div class="relative" data-dd="status">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">Trạng thái
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div class="dd-menu absolute left-0 mt-3 hidden">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="#" class="block px-3 py-2 rounded-lg hover:bg-slate-100" onclick="window.selectStatus && window.selectStatus('all')">Tất cả</a>
+                <a href="#" class="block px-3 py-2 rounded-lg hover:bg-slate-100" onclick="window.selectStatus && window.selectStatus('ok')">Còn hạn</a>
+                <a href="#" class="block px-3 py-2 rounded-lg hover:bg-slate-100" onclick="window.selectStatus && window.selectStatus('soon')">Sắp hết hạn</a>
+                <a href="#" class="block px-3 py-2 rounded-lg hover:bg-slate-100" onclick="window.selectStatus && window.selectStatus('expired')">Hết hạn</a>
+              </div>
+            </div>
+          </div>
+
           <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
 
           <div class="relative" data-dd="user">
@@ -85,11 +102,25 @@
       </div>
     </div>
 
+    <!-- Mobile menu -->
     <div id="mobileMenu" class="md:hidden hidden border-t border-slate-200 bg-white">
       <div class="max-w-screen-xl mx-auto px-4 py-3 space-y-1">
         <a href="index.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Trang chủ</a>
+        <!-- giữ thứ tự: Kho thuốc trước, rồi Trạng thái -->
         <a href="kho.html" class="block px-3 py-2 rounded-lg bg-sky-50">Kho thuốc</a>
+
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Trạng thái</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="#" class="block py-1" onclick="window.selectStatus && window.selectStatus('all')">• Tất cả</a>
+            <a href="#" class="block py-1" onclick="window.selectStatus && window.selectStatus('ok')">• Còn hạn</a>
+            <a href="#" class="block py-1" onclick="window.selectStatus && window.selectStatus('soon')">• Sắp hết hạn</a>
+            <a href="#" class="block py-1" onclick="window.selectStatus && window.selectStatus('expired')">• Hết hạn</a>
+          </div>
+        </details>
+
         <a href="mini-dashboard.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Mini dashboard</a>
+
         <details class="px-3 py-2 rounded-lg">
           <summary class="cursor-pointer select-none">Người dùng</summary>
           <div class="mt-2 pl-3 space-y-1">
@@ -161,7 +192,7 @@
       </div>
 
       <div class="p-4 text-xs text-slate-500">
-        * Dữ liệu từ Google Sheets (read-only). Sửa/Xoá sẽ được lưu **override** cục bộ; có thể khôi phục trong **Thùng rác**.
+        * Dữ liệu từ Google Sheets (read-only). Sửa/Xoá sẽ được lưu <b>override</b> cục bộ; có thể khôi phục trong <b>Thùng rác</b>.
       </div>
     </section>
 
@@ -170,7 +201,22 @@
       <!-- ADD (manual) -->
       <div class="mb-4">
         <div class="text-base font-semibold mb-2">Thêm thuốc (manual)</div>
-        <div class="text-xs text-slate-600 mb-3">Lưu cục bộ trên trình duyệt. Trộn cùng dữ liệu Sheets.</div>
+        <div class="text-xs text-slate-600 mb-3">
+          Quét bằng GM65 hoặc dùng camera thiết bị; cũng có thể nhập mã thủ công.
+        </div>
+
+        <!-- Mã vạch / QR + scan -->
+        <div class="mb-3">
+          <label class="text-sm">Mã vạch / QR</label>
+          <div class="flex gap-2">
+            <input id="addBarcode" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"
+                   placeholder="Ví dụ: 8934901740173" inputmode="numeric" />
+            <button id="btnResolveBarcode" class="btn px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">Tra mã → Tên</button>
+            <button id="btnScanCam" class="btn px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Quét bằng camera</button>
+          </div>
+          <div id="barcodeMsg" class="text-xs text-slate-500 mt-1"></div>
+        </div>
+
         <form id="formAddDrug" class="space-y-2">
           <div>
             <label class="text-sm">Tên thuốc gốc <span class="text-rose-500">*</span></label>
@@ -266,6 +312,36 @@
     </div>
   </div>
 
+  <!-- SCAN MODAL (nếu bạn đã thêm scan.js) -->
+  <div id="scanModal" class="hidden modal-backdrop">
+    <div class="bg-white w-[min(820px,95vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="text-lg font-semibold">Quét mã bằng camera</div>
+        <div class="ml-auto flex items-center gap-2">
+          <select id="camSelect" class="px-2 py-1 rounded-lg border border-slate-300 text-sm"></select>
+          <button id="btnTorch" class="btn px-3 py-1.5 rounded-lg border border-slate-300 text-sm">Đèn</button>
+          <button id="btnCloseScan" class="btn px-3 py-1.5 rounded-lg border border-slate-300 text-sm">Đóng</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-3">
+        <div class="rounded-xl overflow-hidden border border-slate-200 bg-black">
+          <video id="scanVideo" playsinline muted class="w-full h-[48vh] object-contain bg-black"></video>
+        </div>
+        <div class="space-y-2">
+          <div class="text-sm text-slate-600">Đưa mã lại gần trong khung hình. Hỗ trợ 1D (EAN/UPC/Code128…) & 2D (QR).</div>
+          <div class="p-2 rounded-lg bg-slate-50 border text-sm">
+            <div><b>Mã nhận:</b> <span id="scanResult" class="mono"></span></div>
+            <div class="text-xs text-slate-500 mt-1">Sẽ tự điền vào “Mã vạch/QR” và gọi tra cứu.</div>
+          </div>
+          <div>
+            <label class="text-sm">Hoặc tải ảnh có mã</label>
+            <input id="scanImage" type="file" accept="image/*" class="w-full mt-1 text-sm" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer class="mt-4 border-t border-slate-200 bg-white">
     <div class="max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-6 py-6">
       <p class="text-xs text-slate-500">
@@ -279,9 +355,11 @@
   <script src="https://unpkg.com/dayjs/plugin/customParseFormat.js"></script>
   <script>dayjs.extend(window.dayjs_plugin_customParseFormat);</script>
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
   <script src="assets/js/kho.js"></script>
   <script src="assets/js/transvi.js"></script>
   <script src="assets/js/thuoc.js"></script>
+  <script src="assets/js/scan.js"></script>
 
   <script>
     (function () {
@@ -302,7 +380,42 @@
       tabKho?.addEventListener('click',   () => activate('kho'));
       tabThuoc?.addEventListener('click', () => activate('thuoc'));
       activate('kho');
+
+      /* Helper để menu “Trạng thái” gọi trực tiếp chip lọc */
+      window.selectStatus = function(mode){
+        const btn = document.querySelector(`.filter-chip[data-filter="${mode}"]`)
+                 || document.querySelector(`.filter-chip[data-filter="all"]`);
+        if(btn){
+          btn.click();
+          document.getElementById('mobileMenu')?.classList.add('hidden');
+          document.getElementById('tableBody')?.scrollIntoView({behavior:'smooth', block:'start'});
+        }
+      };
     })();
   </script>
+  <!-- ZXing cho quét 1D/2D -->
+  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+  <script>
+    // Nếu frontend & backend CÙNG domain (same origin) thì để chuỗi rỗng.
+    // Nếu backend chạy trên Render, điền base URL của bạn:
+    window.MEDICATE_API_BASE = ""; 
+    // ví dụ: window.MEDICATE_API_BASE = "https://medicate-auth.onrender.com";
+  </script>  
+  <!-- mới: tra mã & quét camera -->
+   <!-- Quagga2: fallback mạnh cho mã 1D (EAN-13/UPC/Code-128...) -->
+  <script src="https://unpkg.com/@ericblade/quagga2@2.0.0-beta.3/dist/quagga.js"></script>
+
+  <!-- Tra mã kiểu "hỏi mạng" không cần backend -->
+  <script src="assets/js/barcode.client.js"></script>
+
+  <!-- (scan.js của bạn vẫn dùng được; mình có phiên bản đã nâng cấp bên dưới) -->
+  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+  <script src="https://unpkg.com/@ericblade/quagga2@2.0.0-beta.3/dist/quagga.js"></script>
+  <!-- DÙNG BẢN CLIENT-ONLY -->
+  <script src="assets/js/barcode.client.js"></script>
+  <!-- Scanner -->
+  <script src="assets/js/scan.js"></script>
+  <button id="btnResolveBarcode" type="button" ...>Tra mã → Tên</button>
+  <button id="btnScanCam" type="button" ...>Quét bằng camera</button>
 </body>
 </html>
