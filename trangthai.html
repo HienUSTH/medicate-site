@@ -3,24 +3,349 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Trạng thái — Medicate</title>
-  <!-- FAVICONS (put this inside <head> on every page) -->
+  <title>Trạng thái môi trường • Medicate</title>
+  <meta name="description" content="Trạng thái nhiệt độ & độ ẩm tủ thuốc Medicate, đọc từ cảm biến DHT22 qua Google Sheets." />
+  <!-- FAVICONS (giống index) -->
   <link rel="icon" href="assets/img/favicon.png">
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Nunito Sans (Semibold 600) -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .font-nunito{font-family:"Nunito Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"}
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
-  <!-- HEADER -->
+  <!-- HEADER (copy từ index.html) -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-2 font-semibold">
+          <img src="assets/img/favicon.png" alt="Medicate" class="h-10 w-10" />
+          <span class="text-lg">Medicate</span>
+        </a>
 
-  <main class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <h1 class="text-2xl md:text-3xl font-semibold">Trạng thái</h1>
-    <p class="mt-2 text-slate-600">Biểu đồ nhiệt độ & độ ẩm theo thời gian, tóm tắt band LOW / OK / WARN / CRIT.</p>
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="index.html" class="py-2 hover:text-sky-700">Trang chủ</a>
 
-    <div class="mt-8 rounded-2xl border border-dashed p-6 text-slate-500">
-      Placeholder biểu đồ. Sẽ nhúng Looker hoặc vẽ chart sau.
+          <div class="relative" data-dd="devices">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+              Thiết bị
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" />
+              </svg>
+            </button>
+            <div class="dd-menu absolute left-0 mt-3 hidden">
+              <div class="w-64 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="thietbi.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Tất cả</a>
+                <a href="thietbi.html?cat=cam-bien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Cảm biến</a>
+                <a href="thietbi.html?cat=vi-dieu-khien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Vi điều khiển</a>
+                <a href="thietbi.html?cat=man-hinh" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Màn hình hiển thị</a>
+                <a href="thietbi.html?cat=nguon-pin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Nguồn / Pin / Sạc</a>
+                <a href="thietbi.html?cat=giam-ap" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Module giảm áp</a>
+                <a href="thietbi.html?cat=phu-kien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Phụ kiện</a>
+              </div>
+            </div>
+          </div>
+
+          <a href="kho.html" class="py-2 hover:text-sky-700">Kho thuốc</a>
+
+          <div class="relative" data-dd="status">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+              Trạng thái
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" />
+              </svg>
+            </button>
+            <div class="dd-menu absolute left-0 mt-3 hidden">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="trangthai.html?view=now" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Hiện giờ</a>
+                <a href="trangthai.html?view=history" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Lịch sử</a>
+              </div>
+            </div>
+          </div>
+
+          <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
+
+          <div class="relative" data-dd="user">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+              Người dùng
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" />
+              </svg>
+            </button>
+            <div class="dd-menu absolute right-0 mt-3 hidden">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
+                <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <button id="btnMobile" class="md:hidden p-2 rounded-lg border border-slate-300" aria-label="Mở menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
     </div>
+
+    <!-- Mobile menu -->
+    <div id="mobileMenu" class="md:hidden hidden border-t border-slate-200 bg-white">
+      <div class="max-w-screen-xl mx-auto px-4 py-3 space-y-1">
+        <a href="index.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Trang chủ</a>
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Thiết bị</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="thietbi.html" class="block py-1">• Tất cả</a>
+            <a href="thietbi.html?cat=cam-bien" class="block py-1">• Cảm biến</a>
+            <a href="thietbi.html?cat=vi-dieu-khien" class="block py-1">• Vi điều khiển</a>
+            <a href="thietbi.html?cat=man-hinh" class="block py-1">• Màn hình hiển thị</a>
+            <a href="thietbi.html?cat=nguon-pin" class="block py-1">• Nguồn / Pin / Sạc</a>
+            <a href="thietbi.html?cat=giam-ap" class="block py-1">• Module giảm áp</a>
+            <a href="thietbi.html?cat=phu-kien" class="block py-1">• Phụ kiện</a>
+          </div>
+        </details>
+        <a href="kho.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Kho thuốc</a>
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Trạng thái</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="trangthai.html?view=now" class="block py-1">• Hiện giờ</a>
+            <a href="trangthai.html?view=history" class="block py-1">• Lịch sử</a>
+          </div>
+        </details>
+        <a href="mini-dashboard.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Mini dashboard</a>
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Người dùng</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="user.html?tab=signup" class="block py-1">• Đăng ký</a>
+            <a href="user.html?tab=signin" class="block py-1">• Đăng nhập</a>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <header class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-semibold tracking-tight">Trạng thái môi trường tủ thuốc</h1>
+        <p class="text-sm text-slate-500">
+          Dữ liệu được ghi từ ESP32 + DHT22 vào Google Sheets, sau đó hiển thị lại trên web.
+        </p>
+      </div>
+
+      <!-- Tabs now/history -->
+      <div class="inline-flex rounded-full border border-slate-200 bg-slate-100 p-1 text-sm">
+        <a href="trangthai.html?view=now"
+           data-view-tab="now"
+           class="px-3 py-1.5 rounded-full border border-transparent">
+          Hiện giờ
+        </a>
+        <a href="trangthai.html?view=history"
+           data-view-tab="history"
+           class="px-3 py-1.5 rounded-full border border-transparent">
+          Lịch sử
+        </a>
+      </div>
+    </header>
+
+    <!-- thông báo lỗi -->
+    <div id="statusError" class="hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+      Không đọc được dữ liệu từ Google Sheets. Kiểm tra lại quyền chia sẻ hoặc kết nối mạng.
+    </div>
+
+    <!-- view: HIỆN GIỜ -->
+    <section id="statusNow" class="space-y-6">
+      <!-- card tổng -->
+      <div class="rounded-2xl border bg-white shadow-sm p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-sm font-medium text-slate-500">Trạng thái hiện tại</span>
+            <span id="nowOverallBadge"
+                  class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium">
+              Đang tải...
+            </span>
+          </div>
+          <p class="text-sm text-slate-500">
+            Cập nhật lần cuối: <span id="nowTimestamp" class="font-medium text-slate-700">—</span>
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 md:w-1/2">
+          <div class="rounded-xl border border-slate-200 bg-sky-50 px-4 py-3">
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">Nhiệt độ</div>
+            <div id="nowTemp" class="mt-1 text-xl font-semibold tracking-tight">—</div>
+            <div id="nowTempBand" class="mt-0.5 text-xs text-slate-500">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-emerald-50 px-4 py-3">
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">Độ ẩm</div>
+            <div id="nowHum" class="mt-1 text-xl font-semibold tracking-tight">—</div>
+            <div id="nowHumBand" class="mt-0.5 text-xs text-slate-500">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- bảng 20 điểm gần nhất với filter -->
+      <div class="rounded-2xl border bg-white shadow-sm">
+        <div class="px-5 py-4 border-b space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-semibold tracking-tight">20 điểm gần nhất trong ngày</h2>
+              <p class="text-xs text-slate-500">Lọc theo ngày mới nhất có dữ liệu trong Sheet1.</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <select id="nowTempBandSelect"
+                    class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <option value="">Band nhiệt: tất cả</option>
+              <option value="cold">❄️ <15° (lạnh)</option>
+              <option value="ok">✅ 15–29.9° (ổn)</option>
+              <option value="warn">⚠️ 30–34.9° (cảnh báo)</option>
+              <option value="hot">🔥 ≥35° (nóng)</option>
+            </select>
+            <select id="nowHumBandSelect"
+                    class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <option value="">Band ẩm: tất cả</option>
+              <option value="ok">✅ ≤60% (ổn)</option>
+              <option value="warn">⚠️ 60–69.9% (cảnh báo)</option>
+              <option value="wet">💧 ≥70% (quá ẩm)</option>
+            </select>
+            <input id="nowSearch"
+                   type="text"
+                   class="w-full md:w-72 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                   placeholder="Tìm theo thời gian / nhiệt độ / độ ẩm...">
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 border-b">
+              <tr>
+                <th class="px-4 py-2 text-left font-medium text-slate-500">Thời gian</th>
+                <th class="px-4 py-2 text-right font-medium text-slate-500">Nhiệt độ (°C)</th>
+                <th class="px-4 py-2 text-left font-medium text-slate-500">Band nhiệt</th>
+                <th class="px-4 py-2 text-right font-medium text-slate-500">Độ ẩm (%)</th>
+                <th class="px-4 py-2 text-left font-medium text-slate-500">Band ẩm</th>
+              </tr>
+            </thead>
+            <tbody id="nowTableBody" class="divide-y divide-slate-100">
+              <tr><td colspan="5" class="px-4 py-4 text-center text-slate-400">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- view: LỊCH SỬ (hôm qua + trước đó) -->
+    <section id="statusHistory" class="space-y-6 hidden">
+      <div class="rounded-2xl border bg-white shadow-sm">
+        <div class="px-5 py-4 border-b space-y-3">
+          <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 class="text-sm font-semibold tracking-tight">Lịch sử trước hôm nay</h2>
+              <p id="historySummary" class="text-xs text-slate-500">
+                Đang tải dữ liệu từ Google Sheets...
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <!-- chọn ngày -->
+              <select id="historyDateSelect"
+                      class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                <option value="all">Tất cả ngày trước hôm nay</option>
+              </select>
+              <!-- filter band nhiệt -->
+              <select id="historyTempBandSelect"
+                      class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                <option value="">Band nhiệt: tất cả</option>
+                <option value="cold">❄️ <15° (lạnh)</option>
+                <option value="ok">✅ 15–29.9° (ổn)</option>
+                <option value="warn">⚠️ 30–34.9° (cảnh báo)</option>
+                <option value="hot">🔥 ≥35° (nóng)</option>
+              </select>
+              <!-- filter band ẩm -->
+              <select id="historyHumBandSelect"
+                      class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                <option value="">Band ẩm: tất cả</option>
+                <option value="ok">✅ ≤60% (ổn)</option>
+                <option value="warn">⚠️ 60–69.9% (cảnh báo)</option>
+                <option value="wet">💧 ≥70% (quá ẩm)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ô tìm kiếm -->
+          <div class="flex flex-wrap gap-2 text-xs">
+            <input id="historySearch"
+                   type="text"
+                   class="w-full md:w-80 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                   placeholder="Tìm theo thời gian (2025-11-19), nhiệt độ 25.0, độ ẩm 60.0...">
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 border-b">
+              <tr>
+                <th class="px-4 py-2 text-left font-medium text-slate-500">Thời gian</th>
+                <th class="px-4 py-2 text-right font-medium text-slate-500">Nhiệt độ (°C)</th>
+                <th class="px-4 py-2 text-left font-medium text-slate-500">Band nhiệt</th>
+                <th class="px-4 py-2 text-right font-medium text-slate-500">Độ ẩm (%)</th>
+                <th class="px-4 py-2 text-left font-medium text-slate-500">Band ẩm</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-slate-100">
+              <tr><td colspan="5" class="px-4 py-4 text-center text-slate-400">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- FOOTER -->
+  <!-- FOOTER (copy từ index.html) -->
+  <footer class="mt-16 border-t border-slate-200 bg-white">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2 font-semibold">
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white">M</span>
+            <span>Medicate</span>
+          </div>
+          <p class="text-sm mt-3 text-slate-600">Tủ thuốc thông minh: cảm biến nhiệt/ẩm, quản lý theo lô, AI tư vấn.</p>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Liên kết</div>
+          <ul class="space-y-1 text-sm">
+            <li><a class="hover:text-sky-700" href="kho.html">Kho thuốc</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html?view=now">Trạng thái – Hiện giờ</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html?view=history">Trạng thái – Lịch sử</a></li>
+            <li><a class="hover:text-sky-700" href="mini-dashboard.html">Mini dashboard</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Tài liệu</div>
+          <ul class="space-y-1 text-sm">
+            <li><a class="hover:text-sky-700" href="#">Hướng dẫn sử dụng</a></li>
+            <li><a class="hover:text-sky-700" href="#">Nguồn & Credits</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Liên hệ</div>
+          <ul class="space-y-1 text-sm">
+            <li>Email: <a class="hover:text-sky-700" href="mailto:contact@medicate.com.vn">contact@medicate.com.vn</a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="mt-8 text-xs text-slate-500">⚠️ Thông tin dược chỉ mang tính tham khảo — hãy hỏi ý kiến bác sĩ/DS khi cần.</p>
+    </div>
+  </footer>
+
+  <!-- JS -->
   <script src="assets/js/nav.js"></script>
+  <script src="assets/js/status-watcher.js"></script>
+  <script src="assets/js/trangthai.js"></script>
 </body>
 </html>
