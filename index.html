@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Medicate</title>
+  <meta name="description" content="Tủ thuốc thông minh - theo dõi nhiệt/ẩm, quản lý kho theo lô, AI tư vấn dược." />
+  <!-- FAVICONS (put this inside <head> on every page) -->
+  <link rel="icon" href="assets/img/favicon.png">
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Nunito Sans (Semibold 600) -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .font-nunito{font-family:"Nunito Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <!-- NAVBAR -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-2 font-semibold">
+          <img src="assets/img/favicon.png" alt="Medicate" class="h-10 w-10" />
+          <span class="text-lg">Medicate</span>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="index.html" class="py-2 hover:text-sky-700">Trang chủ</a>
+
+          <div class="relative" data-dd="devices">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+              Thiết bị
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div class="dd-menu absolute left-0 mt-3 hidden">
+              <div class="w-64 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="thietbi.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Tất cả</a>
+                <a href="thietbi.html?cat=cam-bien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Cảm biến</a>
+                <a href="thietbi.html?cat=vi-dieu-khien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Vi điều khiển</a>
+                <a href="thietbi.html?cat=man-hinh" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Màn hình hiển thị</a>
+                <a href="thietbi.html?cat=nguon-pin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Nguồn / Pin / Sạc</a>
+                <a href="thietbi.html?cat=giam-ap" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Module giảm áp</a>
+                <a href="thietbi.html?cat=phu-kien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Phụ kiện</a>
+              </div>
+            </div>
+          </div>
+
+          <a href="kho.html" class="py-2 hover:text-sky-700">Kho thuốc</a>
+
+          <div class="relative" data-dd="status">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+              Trạng thái
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div class="dd-menu absolute left-0 mt-3 hidden">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="trangthai.html?view=now" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Hiện giờ</a>
+                <a href="trangthai.html?view=history" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Lịch sử</a>
+              </div>
+            </div>
+          </div>
+
+          <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
+
+          <div class="relative" data-dd="user">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+              Người dùng
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            </button>
+            <div class="dd-menu absolute right-0 mt-3 hidden">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
+                <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <button id="btnMobile" class="md:hidden p-2 rounded-lg border border-slate-300" aria-label="Mở menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobileMenu" class="md:hidden hidden border-t border-slate-200 bg-white">
+      <div class="max-w-screen-xl mx-auto px-4 py-3 space-y-1">
+        <a href="index.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Trang chủ</a>
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Thiết bị</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="thietbi.html" class="block py-1">• Tất cả</a>
+            <a href="thietbi.html?cat=cam-bien" class="block py-1">• Cảm biến</a>
+            <a href="thietbi.html?cat=vi-dieu-khien" class="block py-1">• Vi điều khiển</a>
+            <a href="thietbi.html?cat=man-hinh" class="block py-1">• Màn hình hiển thị</a>
+            <a href="thietbi.html?cat=nguon-pin" class="block py-1">• Nguồn / Pin / Sạc</a>
+            <a href="thietbi.html?cat=giam-ap" class="block py-1">• Module giảm áp</a>
+            <a href="thietbi.html?cat=phu-kien" class="block py-1">• Phụ kiện</a>
+          </div>
+        </details>
+        <a href="kho.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Kho thuốc</a>
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Trạng thái</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="trangthai.html?view=now" class="block py-1">• Hiện giờ</a>
+            <a href="trangthai.html?view=history" class="block py-1">• Lịch sử</a>
+          </div>
+        </details>
+        <a href="mini-dashboard.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Mini dashboard</a>
+        <details class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">Người dùng</summary>
+          <div class="mt-2 pl-3 space-y-1">
+            <a href="user.html?tab=signup" class="block py-1">• Đăng ký</a>
+            <a href="user.html?tab=signin" class="block py-1">• Đăng nhập</a>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+    <!-- HERO -->
+    <section class="bg-gradient-to-b from-white to-slate-50">
+      <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="flex flex-wrap items-end justify-center gap-4 text-center">
+          <h1 class="m-0 tracking-tight text-5xl md:text-7xl font-nunito font-semibold
+                     text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-emerald-500">
+            Medicate
+          </h1>
+          <p class="text-slate-600 text-base md:text-xl max-w-3xl">
+            Smart medicine cabinet - real-time temperature & humidity, inventory control, and AI-powered lookups.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDER -->
+    <section class="pb-6">
+      <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div class="relative">
+            <!-- viewport -->
+            <div id="heroSlider" class="relative w-full h-[300px] sm:h-[460px] md:h-[620px] overflow-hidden bg-slate-100"></div>
+
+            <!-- arrows -->
+            <button id="slidePrev" class="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 border hover:bg-white shadow" aria-label="Ảnh trước">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 19-7-7 7-7"/></svg>
+            </button>
+            <button id="slideNext" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 border hover:bg-white shadow" aria-label="Ảnh sau">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 5 7 7-7 7"/></svg>
+            </button>
+
+            <!-- dots -->
+            <div id="slideDots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2"></div>
+          </div>
+
+          <!-- CTA -->
+          <div class="p-5 md:p-6 flex items-center justify-between gap-3 flex-wrap">
+            <h2 class="text-lg font-semibold">Ảnh sản phẩm Medicate</h2>
+            <div class="flex flex-wrap gap-2">
+              <a href="kho.html" class="px-3 py-2 rounded-lg bg-sky-600 text-white text-sm hover:bg-sky-700">Xem kho</a>
+              <a href="trangthai.html?view=now" class="px-3 py-2 rounded-lg border border-slate-300 text-sm hover:bg-slate-50">Trạng thái hiện giờ</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROADMAP -->
+    <section class="py-10 md:py-14 bg-gradient-to-b from-slate-50 to-white">
+      <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-end justify-between gap-4 mb-6">
+          <h2 class="text-2xl md:text-3xl font-semibold">Lộ trình phát triển</h2>
+          <span class="text-slate-500 text-sm">Bản đồ hành trình từ ý tưởng → sản phẩm hoàn thiện</span>
+        </div>
+
+        <div id="roadmap" class="relative rounded-2xl border border-slate-200 bg-white shadow-sm p-4 md:p-6 overflow-hidden">
+          <!-- SVG path nối các mốc -->
+          <svg id="roadmapPath" class="absolute inset-0 pointer-events-none" width="100%" height="100%" preserveAspectRatio="none"></svg>
+
+          <!-- các mốc sẽ được JS render -->
+          <div id="roadmapSteps"
+               class="grid grid-cols-1 md:grid-cols-6 gap-4 md:gap-5">
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mt-16 border-t border-slate-200 bg-white">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2 font-semibold">
+            <img src="assets/img/favicon.png" alt="Medicate" class="h-10 w-10"/>
+            <span>Medicate</span>
+          </div>
+          <p class="text-sm mt-3 text-slate-600">Tủ thuốc thông minh: cảm biến nhiệt/ẩm, quản lý theo lô, AI tư vấn.</p>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Liên kết</div>
+          <ul class="space-y-1 text-sm">
+            <li><a class="hover:text-sky-700" href="kho.html">Kho thuốc</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html?view=now">Trạng thái – Hiện giờ</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html?view=history">Trạng thái – Lịch sử</a></li>
+            <li><a class="hover:text-sky-700" href="mini-dashboard.html">Mini dashboard</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Tài liệu</div>
+          <ul class="space-y-1 text-sm">
+            <li><a class="hover:text-sky-700" href="#">Hướng dẫn sử dụng</a></li>
+            <li><a class="hover:text-sky-700" href="#">Nguồn & Credits</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Liên hệ</div>
+          <ul class="space-y-1 text-sm">
+            <li>Email: <a class="hover:text-sky-700" href="mailto:contact@medicate.com.vn">contact@medicate.com.vn</a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="mt-8 text-xs text-slate-500">⚠️ Thông tin dược chỉ mang tính tham khảo — hãy hỏi ý kiến bác sĩ/DS khi cần.</p>
+    </div>
+  </footer>
+
+  <!-- JS -->
+  <script src="assets/js/nav.js"></script>
+  <script src="assets/js/status-watcher.js"></script>
+  <script src="assets/js/reminder-watcher.js"></script>
+  <script src="assets/js/home.js"></script>
+  <script src="assets/js/roadmap.js"></script>
+  
+</body>
+</html>

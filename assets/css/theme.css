@@ -1,0 +1,201 @@
+/* ===== Medicate Themes =====
+   Đổi theme bằng cách thêm class .theme-ocean / .theme-mint / .theme-midnight / .theme-coral / .theme-slate lên <html>
+   Nếu không có class => dùng :root (Default)
+*/
+
+/* --- DEFAULT (calm sky) --- */
+:root{
+  --nav-bg-from: #f8fafc;   /* slate-50 */
+  --nav-bg-to:   #edf2f7;   /* gray-100 */
+  --nav-text:    #0f172a;   /* slate-900 */
+  --nav-muted:   #475569;   /* slate-600 */
+  --nav-active:  #0ea5e9;   /* sky-500 */
+  --nav-hover:   #0284c7;   /* sky-600 */
+  --nav-border:  #e2e8f0;   /* slate-200 */
+
+  --page-bg-from:#fbfdff;
+  --page-bg-to:  #f8fafc;
+
+  --body-text:   #0f172a;   /* màu chữ mặc định toàn trang */
+  --card-bg:     #ffffff;   /* nền các “khối” (card) */
+  --card-border: #e2e8f0;
+  --muted-text:  #475569;
+}
+
+/* --- THEME 1: Ocean --- */
+.theme-ocean{
+  --nav-bg-from: #e0f2fe;
+  --nav-bg-to:   #cffafe;
+  --nav-text:    #0b1324;
+  --nav-muted:   #0e7490;
+  --nav-active:  #0369a1;
+  --nav-hover:   #0891b2;
+  --nav-border:  #bae6fd;
+
+  --page-bg-from:#f0f9ff;
+  --page-bg-to:  #ecfeff;
+
+  --body-text:   #0b1324;
+  --card-bg:     #ffffff;
+  --card-border: #e2e8f0;
+  --muted-text:  #0e7490;
+}
+
+/* --- THEME 2: Mint (Healthcare) --- */
+.theme-mint{
+  --nav-bg-from: #ecfdf5;
+  --nav-bg-to:   #d1fae5;
+  --nav-text:    #052e2b;
+  --nav-muted:   #065f46;
+  --nav-active:  #059669;
+  --nav-hover:   #10b981;
+  --nav-border:  #a7f3d0;
+
+  --page-bg-from:#f6fffb;
+  --page-bg-to:  #ecfdf5;
+
+  --body-text:   #052e2b;
+  --card-bg:     #ffffff;
+  --card-border: #dcfce7;
+  --muted-text:  #065f46;
+}
+
+/* --- THEME 3: Midnight (dark mode thật sự) --- */
+.theme-midnight{
+  --nav-bg-from: #0b1220;
+  --nav-bg-to:   #111827;   /* gray-900 */
+  --nav-text:    #e5e7eb;
+  --nav-muted:   #c7d2fe;   /* indigo-200 */
+  --nav-active:  #93c5fd;   /* blue-300 */
+  --nav-hover:   #bfdbfe;   /* blue-200 */
+  --nav-border:  #1f2937;
+
+  --page-bg-from:#0b1220;
+  --page-bg-to:  #0f172a;
+
+  --body-text:   #e5e7eb;   /* chữ sáng */
+  --card-bg:     #0f172a;   /* nền khối tối */
+  --card-border: #1f2937;   /* viền tối */
+  --muted-text:  #a5b4fc;
+
+  color-scheme: dark;
+}
+
+/* --- THEME 4: Coral --- */
+.theme-coral{
+  --nav-bg-from: #fff7ed;
+  --nav-bg-to:   #ffedd5;
+  --nav-text:    #431407;
+  --nav-muted:   #9a3412;
+  --nav-active:  #ea580c;
+  --nav-hover:   #f97316;
+  --nav-border:  #fed7aa;
+
+  --page-bg-from:#fffaf3;
+  --page-bg-to:  #fff7ed;
+
+  --body-text:   #431407;
+  --card-bg:     #ffffff;
+  --card-border: #fed7aa;
+  --muted-text:  #9a3412;
+}
+
+/* --- THEME 5: Slate (neutral) --- */
+.theme-slate{
+  --nav-bg-from: #ffffff;
+  --nav-bg-to:   #f8fafc;
+  --nav-text:    #0f172a;
+  --nav-muted:   #475569;
+  --nav-active:  #334155;
+  --nav-hover:   #1f2937;
+  --nav-border:  #e2e8f0;
+
+  --page-bg-from:#ffffff;
+  --page-bg-to:  #f8fafc;
+
+  --body-text:   #0f172a;
+  --card-bg:     #ffffff;
+  --card-border: #e2e8f0;
+  --muted-text:  #475569;
+}
+
+/* === Common components dùng biến === */
+
+/* Page background + màu chữ tổng thể */
+body{
+  background: linear-gradient(180deg, var(--page-bg-from), var(--page-bg-to));
+  color: var(--body-text);
+}
+
+/* Navbar */
+header.nav-themed{
+  background: linear-gradient(180deg, var(--nav-bg-from), var(--nav-bg-to)) !important;
+  color: var(--nav-text);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--nav-border) !important;
+  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.06);
+}
+header.nav-themed nav a{
+  color: var(--nav-muted);
+  transition: color .15s ease, background-color .15s ease, text-decoration-color .15s ease;
+}
+header.nav-themed nav a:hover{ color: var(--nav-hover); }
+header.nav-themed nav a.is-active,
+header.nav-themed .dd-toggle.is-active{
+  color: var(--nav-active) !important;
+  font-weight: 600;
+  text-underline-offset: 4px;
+}
+header.nav-themed .dd-menu > div{
+  border-color: var(--nav-border) !important;
+  box-shadow: 0 16px 40px rgba(2, 132, 199, 0.08);
+}
+header.nav-themed .dd-menu a:hover{
+  background-color: color-mix(in oklab, var(--nav-bg-from) 60%, white);
+}
+
+/* Mobile menu */
+#mobileMenu.nav-themed a:hover{
+  background-color: color-mix(in oklab, var(--nav-bg-from) 60%, white);
+}
+#mobileMenu.nav-themed a.is-active{
+  background-color: color-mix(in oklab, var(--nav-bg-from) 65%, white);
+  color: var(--nav-active); font-weight:600;
+}
+
+/* “Card-like” khối có border + nền trắng: chuyển sang màu theo theme */
+.rounded-2xl.border,
+.rounded-xl.border,
+.border.bg-white,
+.bg-white.shadow-sm,
+.bg-white{
+  background-color: var(--card-bg) !important;
+  border-color: var(--card-border) !important;
+}
+
+/* Văn bản tone phụ */
+.text-slate-600, .text-gray-600, .text-neutral-600 { color: var(--muted-text) !important; }
+
+/* Trong Midnight: ép các text tối sang sáng (override những class text-slate-8/9…) */
+.theme-midnight .text-slate-800,
+.theme-midnight .text-slate-900,
+.theme-midnight .text-gray-800,
+.theme-midnight .text-gray-900,
+.theme-midnight .text-neutral-800,
+.theme-midnight .text-neutral-900{
+  color: var(--body-text) !important;
+}
+
+/* Input / textarea / select nền tối ở Midnight */
+.theme-midnight input,
+.theme-midnight textarea,
+.theme-midnight select{
+  background-color: #0b1220 !important;
+  color: #e5e7eb !important;
+  border-color: #1f2937 !important;
+}
+
+/* Scrollbar nhẹ ở Midnight (WebKit) */
+.theme-midnight *::-webkit-scrollbar{ width:12px; height:12px; }
+.theme-midnight *::-webkit-scrollbar-thumb{ background:#1f2937; border-radius:8px; }
+.theme-midnight *::-webkit-scrollbar-track{ background:#0b1220; }

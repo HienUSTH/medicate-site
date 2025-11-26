@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Người dùng • Medicate</title>
+  <link rel="icon" href="assets/img/favicon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <main class="max-w-md mx-auto px-4 py-12">
+    <h1 class="text-2xl md:text-3xl font-semibold text-center">Người dùng</h1>
+    <div id="authTabs" class="mt-8 rounded-2xl border p-6 bg-white">
+      <div class="flex gap-4">
+        <button data-tab="signup" class="auth-tab px-4 py-2 rounded-lg bg-sky-600 text-white">Đăng ký</button>
+        <button data-tab="signin" class="auth-tab px-4 py-2 rounded-lg border">Đăng nhập</button>
+      </div>
+      <div class="mt-6">
+        <!-- Đăng ký -->
+        <form id="signupForm" class="space-y-4" autocomplete="off">
+          <div>
+            <label class="block text-sm mb-1" for="su_username">Tên người dùng</label>
+            <input id="su_username" name="username" type="text" class="w-full rounded-xl border px-3 py-2" placeholder="vd: ngoc_anh" required />
+          </div>
+          <div>
+            <label class="block text-sm mb-1" for="su_email">Email</label>
+            <input id="su_email" name="email" type="email" class="w-full rounded-xl border px-3 py-2" placeholder="vd: ten@medicate.vn" required />
+          </div>
+          <div>
+            <label class="block text-sm mb-1" for="su_password">Mật khẩu</label>
+            <input id="su_password" name="password" type="password" class="w-full rounded-xl border px-3 py-2" placeholder="••••••••" minlength="6" required />
+          </div>
+          <button type="submit" class="w-full rounded-xl bg-sky-600 text-white px-4 py-2">Tạo tài khoản</button>
+          <p id="signupMsg" class="text-xs"></p>
+        </form>
+
+        <!-- Đăng nhập -->
+        <form id="signinForm" class="space-y-4 hidden" autocomplete="off">
+          <div>
+            <label class="block text-sm mb-1" for="si_email">Email</label>
+            <input id="si_email" name="email" type="email" class="w-full rounded-xl border px-3 py-2" required />
+          </div>
+          <div>
+            <label class="block text-sm mb-1" for="si_password">Mật khẩu</label>
+            <input id="si_password" name="password" type="password" class="w-full rounded-xl border px-3 py-2" required />
+          </div>
+          <button type="submit" class="w-full rounded-xl bg-sky-600 text-white px-4 py-2">Đăng nhập</button>
+          <p id="signinMsg" class="text-xs"></p>
+        </form>
+      </div>
+    </div>
+  </main>
+  <script src="assets/js/nav.js"></script>
+  <script src="assets/js/status-watcher.js"></script>
+  <script src="assets/js/reminder-watcher.js"></script>
+  <script>
+    // 1. Chọn tab theo URL ?tab=...
+    const params = new URLSearchParams(window.location.search);
+    const currentTab = params.get('tab') || 'signup';
+    const signupForm = document.getElementById('signupForm');
+    const signinForm = document.getElementById('signinForm');
+    const tabBtns = document.querySelectorAll('.auth-tab');
+
+    function switchTab(tab) {
+      if (tab === 'signup') {
+        signupForm.classList.remove('hidden');
+        signinForm.classList.add('hidden');
+      } else {
+        signinForm.classList.remove('hidden');
+        signupForm.classList.add('hidden');
+      }
+      tabBtns.forEach(btn => {
+        if (btn.dataset.tab === tab) {
+          btn.classList.add('bg-sky-600','text-white');
+          btn.classList.remove('border');
+        } else {
+          btn.classList.remove('bg-sky-600','text-white');
+          btn.classList.add('border');
+        }
+      });
+    }
+    switchTab(currentTab);
+    tabBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+    // 2. Cấu hình endpoint backend
+    const API_BASE = 'https://medicate-backend.onrender.com/api/auth'; // đổi thành domain thật khi deploy
+
+    // 3. Xử lý ĐĂNG KÝ
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('signupMsg');
+      msg.textContent = 'Đang gửi...';
+      msg.className = 'text-xs text-slate-500';
+      try {
+        const body = {
+          fullname: e.target.username.value,
+          email: e.target.email.value,
+          password: e.target.password.value,
+        };
+        const res = await fetch(API_BASE + '/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msg.textContent = data.message || 'Đăng ký thất bại';
+          msg.className = 'text-xs text-red-500';
+        } else {
+          msg.textContent = 'Đăng ký thành công. Bạn có thể đăng nhập.';
+          msg.className = 'text-xs text-green-600';
+          e.target.reset();
+          switchTab('signin');
+        }
+      } catch (err) {
+        msg.textContent = 'Lỗi kết nối server';
+        msg.className = 'text-xs text-red-500';
+      }
+    });
+
+    // 4. Xử lý ĐĂNG NHẬP
+    signinForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('signinMsg');
+      msg.textContent = 'Đang đăng nhập...';
+      msg.className = 'text-xs text-slate-500';
+      try {
+        const body = {
+          email: e.target.email.value,
+          password: e.target.password.value,
+        };
+        const res = await fetch(API_BASE + '/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msg.textContent = data.message || 'Đăng nhập thất bại';
+          msg.className = 'text-xs text-red-500';
+        } else {
+          // Lưu token để trang khác dùng
+          localStorage.setItem('medicate_token', data.token);
+          msg.textContent = 'Đăng nhập thành công. Đang chuyển...';
+          msg.className = 'text-xs text-green-600';
+          // ví dụ chuyển sang trang dashboard
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 700);
+        }
+      } catch (err) {
+        msg.textContent = 'Lỗi kết nối server';
+        msg.className = 'text-xs text-red-500';
+      }
+    });
+  </script>
+</body>
+</html>

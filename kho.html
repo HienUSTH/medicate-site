@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kho thuốc • Medicate</title>
+  <link rel="icon" href="assets/img/favicon.png">
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font + theme -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/theme.css" />
+
+  <style>
+    .font-nunito{
+      font-family:"Nunito Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"
+    }
+
+    input[type="range"].qty-range{
+      -webkit-appearance:none;appearance:none;width:220px;height:10px;border-radius:999px;
+      background:linear-gradient(90deg,#7dd3fc,#34d399);outline:none;opacity:.95;
+    }
+    input[type="range"].qty-range::-webkit-slider-thumb{
+      -webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:999px;background:#fff;
+      border:2px solid #0284c7;box-shadow:0 1px 4px rgba(2,132,199,.35);cursor:pointer;
+    }
+    input[type="range"].qty-range::-moz-range-thumb{
+      width:18px;height:18px;border-radius:999px;background:#fff;border:2px solid #0284c7;cursor:pointer;
+    }
+    .chat-bubble{max-width:85%;border-radius:16px;padding:10px 12px}
+    .chat-user{background:#e0f2fe;border:1px solid #bae6fd}
+    .chat-bot {background:#f8fafc;border:1px solid #e2e8f0}
+    .mono{font-variant-numeric:tabular-nums}
+    .segmented>button{border:1px solid #cbd5e1}
+    .segmented>button:first-child{border-radius:999px 0 0 999px}
+    .segmented>button:last-child{border-radius:0 999px 999px 0;margin-left:-1px}
+    .segmented>button[aria-pressed="true"]{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
+    .segmented>button[disabled]{opacity:.5;cursor:not-allowed}
+    .btn {transition: transform .05s ease}
+    .btn:active {transform: translateY(1px)}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.4);display:flex;align-items:center;justify-content:center;z-index:50}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- NAVBAR -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="index.html" class="flex items-center gap-2 font-semibold">
+          <img src="assets/img/favicon.png" alt="Medicate" class="h-10 w-10" />
+          <span class="text-lg">Medicate</span>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="index.html" class="py-2 hover:text-sky-700">Trang chủ</a>
+
+          <!-- Dropdown THIẾT BỊ -->
+          <div class="relative" data-dd="devices">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+              Thiết bị
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" />
+              </svg>
+            </button>
+            <div class="dd-menu absolute left-0 mt-3 hidden">
+              <div class="w-64 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="thietbi.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Tất cả</a>
+                <a href="thietbi.html?cat=cam-bien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Cảm biến</a>
+                <a href="thietbi.html?cat=vi-dieu-khien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Vi điều khiển</a>
+                <a href="thietbi.html?cat=man-hinh" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Màn hình hiển thị</a>
+                <a href="thietbi.html?cat=nguon-pin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Nguồn / Pin / Sạc</a>
+                <a href="thietbi.html?cat=giam-ap" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Module giảm áp</a>
+                <a href="thietbi.html?cat=phu-kien" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Phụ kiện</a>
+              </div>
+            </div>
+          </div>
+
+          <a href="kho.html" class="py-2 hover:text-sky-700">Kho thuốc</a>
+
+          <!-- Dropdown TRẠNG THÁI -->
+          <div class="relative" data-dd="status">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+              Trạng thái
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" />
+              </svg>
+            </button>
+            <div class="dd-menu absolute left-0 mt-3 hidden">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="trangthai.html?view=now" class="block px-3 py-2 rounded-lg hover:bg-slate-100">
+                  Hiện giờ
+                </a>
+                <a href="trangthai.html?view=history" class="block px-3 py-2 rounded-lg hover:bg-slate-100">
+                  Lịch sử
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
+
+          <!-- User -->
+          <div class="relative" data-dd="user">
+            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+              Người dùng
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/>
+              </svg>
+            </button>
+            <div class="dd-menu absolute right-0 mt-3 hidden">
+              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+                <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
+                <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Nút mobile -->
+        <button id="btnMobile" class="md:hidden inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-100">
+          <span class="sr-only">Mở menu</span>
+          <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- MENU MOBILE -->
+    <div id="mobileMenu" class="md:hidden hidden border-t bg-white/95">
+      <nav class="px-4 py-3 space-y-1">
+        <a href="index.html" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Trang chủ</a>
+        <a href="thietbi.html" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Thiết bị</a>
+        <a href="kho.html" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Kho thuốc</a>
+        <a href="trangthai.html?view=now" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Trạng thái hiện tại</a>
+        <a href="trangthai.html?view=history" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Lịch sử nhiệt/ẩm</a>
+        <a href="mini-dashboard.html" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Mini dashboard</a>
+        <a href="user.html" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Người dùng</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-6 py-6 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+    <!-- LEFT: BẢNG KHO -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-4 border-b border-slate-200 flex flex-wrap items-center gap-3">
+        <div class="text-lg font-semibold">Kho thuốc</div>
+
+        <!-- Slider SL -->
+        <div class="flex items-center gap-2 ml-2">
+          <span class="text-sm text-slate-600">SL ≤</span>
+          <input id="qtySlider" class="qty-range" type="range" min="0" max="10" value="10" step="1" />
+          <span id="qtyVal" class="text-sm font-medium mono">10</span>
+        </div>
+
+        <div class="ml-auto w-full max-w-xs">
+          <input id="searchInput" type="search" placeholder="Tìm theo tên/alias..."
+                 class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" />
+        </div>
+      </div>
+
+      <div class="p-3 border-b border-slate-200 flex flex-wrap gap-2 items-center">
+        <button data-filter="all"     class="filter-chip px-3 py-1.5 rounded-full border text-sm border-sky-300 hover:bg-sky-50">Tất cả</button>
+        <button data-filter="ok"      class="filter-chip px-3 py-1.5 rounded-full border text-sm border-emerald-300 hover:bg-emerald-50">Còn hạn</button>
+        <button data-filter="soon"    class="filter-chip px-3 py-1.5 rounded-full border text-sm border-amber-300 hover:bg-amber-50">Sắp hết hạn</button>
+        <button data-filter="expired" class="filter-chip px-3 py-1.5 rounded-full border text-sm border-rose-300 hover:bg-rose-50">Hết hạn</button>
+
+        <div class="ml-auto flex items-center gap-2">
+          <button id="btnBulkDelete" class="btn px-3 py-1.5 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 text-sm">
+            Xoá tất cả (đang lọc)
+          </button>
+          <button id="btnOpenTrash" class="btn px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm">
+            Thùng rác
+          </button>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-[13.5px] table-auto">
+          <colgroup>
+            <col style="width: 26%" />
+            <col style="width: 20%" />
+            <col style="width: 9%" />
+            <col style="width: 12%" />
+            <col style="width: 12%" />
+            <col style="width: 12%" />
+            <col style="width: 9%" />
+          </colgroup>
+          <thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
+            <tr>
+              <th class="py-2.5 px-3 text-left font-medium">Tên thuốc gốc</th>
+              <th class="py-2.5 px-3 text-left font-medium">Alias</th>
+              <th class="py-2.5 px-3 text-right font-medium">Số lượng</th>
+              <th class="py-2.5 px-3 text-left font-medium">HSD</th>
+              <th class="py-2.5 px-3 text-left font-medium">Ngày nhập</th>
+              <th class="py-2.5 px-3 text-center font-medium">Trạng thái</th>
+              <th class="py-2.5 px-3 text-right font-medium">Còn<br>(ngày)</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+
+      <div class="p-4 text-xs text-slate-500">
+        * Dữ liệu từ Google Sheets (read-only). Các thuốc thêm manual được lưu cục bộ (localStorage).
+      </div>
+    </section>
+
+    <!-- RIGHT: FORM + CATALOG + REMINDERS + CHAT -->
+    <aside class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 h-fit sticky top-20">
+      <!-- ADD (manual) -->
+      <div class="mb-4">
+        <div class="text-base font-semibold mb-2">Thêm thuốc (manual)</div>
+        <div class="text-xs text-slate-600 mb-3">
+          Quét bằng GM65 hoặc dùng camera thiết bị; cũng có thể nhập mã thủ công.
+        </div>
+
+        <!-- Mã vạch / QR + scan -->
+        <div class="mb-3">
+          <label class="text-sm">Mã vạch / QR</label>
+          <div class="flex gap-2">
+            <input id="addBarcode" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"
+                   placeholder="Ví dụ: 8934901740173" inputmode="numeric" />
+            <button id="btnResolveBarcode" class="btn px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">Tra mã → Tên</button>
+            <button id="btnScanCam" class="btn px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Quét bằng camera</button>
+          </div>
+          <div id="barcodeMsg" class="text-xs text-slate-500 mt-1"></div>
+        </div>
+
+        <form id="formAddDrug" class="space-y-2">
+          <div>
+            <label class="text-sm">Tên thuốc gốc <span class="text-rose-500">*</span></label>
+            <input id="addTen" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="Ví dụ: Paracetamol"/>
+          </div>
+          <div>
+            <label class="text-sm">Alias</label>
+            <input id="addAlias" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="Tên khác, phân liều, hãng… (tuỳ chọn)"/>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-1">
+              <label class="text-sm">Số lượng</label>
+              <input id="addSL" type="number" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="0"/>
+            </div>
+            <div>
+              <label class="text-sm">HSD (DD/MM/YYYY)</label>
+              <input id="addHSD" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="31/12/2025"/>
+            </div>
+            <div>
+              <label class="text-sm">Ngày nhập (DD/MM/YYYY)</label>
+              <input id="addNgayNhap" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="03/11/2025"/>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 pt-1">
+            <button type="submit" class="btn px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Thêm</button>
+            <button id="btnClearAdd" type="button" class="btn px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">Xoá form</button>
+            <span id="addMsg" class="text-xs text-slate-600 ml-auto"></span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Catalog -->
+      <div class="text-base font-semibold mb-2">Danh mục thuốc nội phổ biến</div>
+      <div class="text-sm text-slate-600 mb-3">Mục đã có trong tủ sẽ tô nền xanh.</div>
+      <div class="flex items-center gap-2 mb-3">
+        <button id="btnToggleMissing" class="btn px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">Xem mục thiếu</button>
+        <span id="coverageBadge" class="ml-auto text-xs px-2 py-1 rounded-full bg-slate-100">Coverage: …</span>
+      </div>
+      <div id="catalogList" class="max-h-[28vh] overflow-auto space-y-1 text-sm"></div>
+      <hr class="my-4">
+
+      <!-- Global reminders -->
+      <div id="globalRemindersBox" class="mt-3">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="text-base font-semibold">Thuốc đang được nhắc</div>
+          <button id="btnReloadGlobalReminders"
+                  class="btn px-2 py-1 rounded-full border border-slate-300 text-xs hover:bg-slate-50">
+            Làm mới
+          </button>
+        </div>
+        <div id="globalRemindersList"
+            class="text-xs space-y-1 max-h-[18vh] overflow-auto"></div>
+      </div>
+      <hr class="my-4">
+
+      <!-- Chatbot switch (UI, tạm chưa dùng logic AI) -->
+      <div class="flex items-center justify-between">
+        <div class="text-base font-semibold">Trợ lý</div>
+        <div class="segmented inline-flex rounded-full overflow-hidden">
+          <button id="tabKho"  type="button" class="px-3 py-1.5 text-sm" aria-pressed="true">Tủ thuốc</button>
+          <button id="tabThuoc" type="button" class="px-3 py-1.5 text-sm" aria-pressed="false">Tra cứu thuốc</button>
+        </div>
+      </div>
+
+      <!-- Chatbot: Hỏi kho (UI) -->
+<div id="chatKho" class="mt-3 space-y-3">
+  <div class="text-sm text-slate-600">
+    Hỏi nhanh về kho thuốc: số lượng, hạn dùng, thuốc sắp hết hạn...
+  </div>
+
+  <!-- danh sách câu hỏi/ trả lời -->
+  <div id="chatList"
+       class="text-sm space-y-2 max-h-[220px] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+    <div class="text-xs text-slate-500">
+      Gõ câu hỏi vào ô bên dưới hoặc bấm một gợi ý có sẵn.
+    </div>
+  </div>
+
+  <!-- ô nhập + nút gửi -->
+  <div class="flex items-start gap-2">
+    <textarea id="chatInput"
+              rows="2"
+              class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm resize-none focus:outline-none focus:ring focus:ring-sky-200"
+              placeholder="Ví dụ: Thuốc nào sắp hết hạn trong 30 ngày tới?"></textarea>
+    <button id="btnSend"
+            type="button"
+            class="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm">
+      Hỏi
+    </button>
+  </div>
+
+  <!-- chip gợi ý -->
+  <div class="flex flex-wrap gap-2 text-xs">
+    <button id="chipSHH30"
+            type="button"
+            class="chip-q px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100"
+            data-q="Thuốc nào sắp hết hạn trong 30 ngày tới?">
+      SHH 30 ngày
+    </button>
+    <button id="chipRandOne"
+            type="button"
+            class="chip-q px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100">
+      Tên ngẫu nhiên: SL, HSD
+    </button>
+    <button id="chipRandPair"
+            type="button"
+            class="chip-q px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100">
+      2 tên ngẫu nhiên: tổng SL
+    </button>
+  </div>
+</div>
+
+
+      <div id="chatThuoc" class="hidden mt-3">
+        <div class="text-sm text-slate-600">
+          Tab tra cứu thuốc sẽ dùng để hiển thị các thông tin dược (sau này).
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- REMINDER MODAL (nhiều giờ uống) -->
+  <div id="reminderModal" class="hidden modal-backdrop">
+    <div class="bg-white w-[min(480px,92vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="text-lg font-semibold">Nhắc uống thuốc</div>
+        <button id="btnCloseReminder" class="btn ml-auto px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50 text-sm">
+          Đóng
+        </button>
+      </div>
+
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-slate-700 mb-1">Thuốc</label>
+          <input id="remDrugName" type="text"
+                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50"
+                 readonly />
+        </div>
+
+        <div>
+          <label class="block text-slate-700 mb-1">Mô tả liều dùng</label>
+          <input id="remDoseText" type="text"
+                 class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                 placeholder="Ví dụ: 1 viên, trước ăn sáng" />
+        </div>
+
+        <div>
+          <label class="block text-slate-700 mb-1">Các giờ uống trong ngày</label>
+          <div id="remTimesContainer" class="space-y-2 mb-2"></div>
+          <button id="btnAddRemTime" type="button"
+                  class="btn px-3 py-1.5 rounded-full border border-slate-300 text-xs hover:bg-slate-50">
+            + Thêm giờ uống
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 mb-1">Kiểu lặp</label>
+            <select id="remRepeatType"
+                    class="w-full px-3 py-2 rounded-lg border border-slate-300">
+              <option value="once">Một lần</option>
+              <option value="daily" selected>Hàng ngày</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1">Email nhận nhắc</label>
+            <input id="remEmail" type="email"
+                   class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                   placeholder="Nhập email..." />
+          </div>
+        </div>
+
+        <div id="remExistingWrapper" class="mt-2">
+          <div class="text-xs font-semibold text-slate-600 mb-1">
+            Các giờ đã hẹn cho thuốc này
+          </div>
+          <div id="remExistingList" class="space-y-1 text-xs"></div>
+        </div>
+
+        <div class="flex items-center justify-between mt-3">
+          <div id="remStatus" class="text-xs text-slate-500"></div>
+          <button id="btnSaveReminder"
+                  class="btn px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700 text-sm">
+            Lưu nhắc
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT DRUG MODAL -->
+  <div id="editModal" class="hidden modal-backdrop">
+    <div class="bg-white w-[min(480px,92vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="text-lg font-semibold">Sửa thông tin thuốc</div>
+        <button id="btnCloseEdit"
+                class="btn ml-auto px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50 text-sm">
+          Đóng
+        </button>
+      </div>
+
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-slate-700 mb-1">Thuốc</label>
+          <input id="editDrugName" type="text"
+                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50"
+                 readonly />
+        </div>
+
+        <div>
+          <label class="block text-slate-700 mb-1">Alias</label>
+          <input id="editAlias" type="text"
+                 class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                 placeholder="Tên khác, phân liều, hãng… (tuỳ chọn)" />
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-slate-700 mb-1">Số lượng</label>
+            <input id="editSL" type="number" min="0"
+                   class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                   placeholder="0" />
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1">HSD (DD/MM/YYYY)</label>
+            <input id="editHSD" type="text"
+                   class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                   placeholder="31/12/2025" />
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1">Ngày nhập (DD/MM/YYYY)</label>
+            <input id="editNgayNhap" type="text"
+                   class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                   placeholder="03/11/2025" />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between mt-3">
+          <div id="editStatus" class="text-xs text-slate-500"></div>
+          <button id="btnSaveEdit"
+                  class="btn px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700 text-sm">
+            Lưu thay đổi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRASH MODAL (stub) -->
+  <div id="trashModal" class="hidden modal-backdrop">
+    <div class="bg-white w-[min(900px,92vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="text-lg font-semibold">Thùng rác</div>
+        <button id="btnEmptyTrash" class="btn ml-auto px-3 py-1.5 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 text-sm">
+          Xoá vĩnh viễn tất cả
+        </button>
+        <button id="btnCloseTrash" class="btn px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm">
+          Đóng
+        </button>
+      </div>
+      <div class="overflow-auto max-h-[70vh] border rounded-xl">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="text-left px-3 py-2">Thời gian</th>
+              <th class="text-left px-3 py-2">Loại</th>
+              <th class="text-left px-3 py-2">Tên/alias</th>
+              <th class="text-left px-3 py-2">Hành động</th>
+              <th class="text-right px-3 py-2">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="trashBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCAN MODAL -->
+  <div id="scanModal" class="hidden modal-backdrop">
+    <div class="bg-white w-[min(820px,95vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="text-lg font-semibold">Quét mã bằng camera</div>
+        <div class="ml-auto flex items-center gap-2">
+          <select id="camSelect" class="px-2 py-1 rounded-lg border border-slate-300 text-sm"></select>
+          <button id="btnTorch" class="btn px-3 py-1.5 rounded-lg border border-slate-300 text-sm">Đèn</button>
+          <button id="btnCloseScan" class="btn px-3 py-1.5 rounded-lg border border-slate-300 text-sm">Đóng</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-3">
+        <div class="rounded-xl overflow-hidden border border-slate-200 bg-black">
+          <video id="scanVideo" playsinline muted class="w-full h-[48vh] object-contain bg-black"></video>
+        </div>
+        <div class="space-y-2">
+          <div class="text-sm text-slate-600">Đưa mã lại gần trong khung hình. Hỗ trợ 1D (EAN/UPC/Code128…) & 2D (QR).</div>
+          <div class="p-2 rounded-lg bg-slate-50 border text-sm">
+            <div><b>Mã nhận:</b> <span id="scanResult" class="mono"></span></div>
+            <div class="text-xs text-slate-500 mt-1">Sẽ tự điền vào “Mã vạch/QR” và gọi tra cứu.</div>
+          </div>
+          <div>
+            <label class="text-sm">Hoặc tải ảnh có mã</label>
+            <input id="scanImage" type="file" accept="image/*" class="w-full mt-1 text-sm" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="mt-16 border-t border-slate-200 bg-white">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2 font-semibold">
+            <img src="assets/img/favicon.png" alt="Medicate" class="h-10 w-10"/>
+            <span>Medicate</span>
+          </div>
+          <p class="text-sm mt-3 text-slate-600">Tủ thuốc thông minh: cảm biến nhiệt/ẩm, quản lý theo lô, AI tư vấn.</p>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Liên kết</div>
+          <ul class="space-y-1 text-sm">
+            <li><a class="hover:text-sky-700" href="kho.html">Kho thuốc</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html?view=now">Trạng thái – Hiện giờ</a></li>
+            <li><a class="hover:text-sky-700" href="trangthai.html?view=history">Trạng thái – Lịch sử</a></li>
+            <li><a class="hover:text-sky-700" href="mini-dashboard.html">Mini dashboard</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Tài liệu</div>
+          <ul class="space-y-1 text-sm">
+            <li><a class="hover:text-sky-700" href="#">Hướng dẫn sử dụng</a></li>
+            <li><a class="hover:text-sky-700" href="#">Nguồn &amp; Credits</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Liên hệ</div>
+          <ul class="space-y-1 text-sm">
+            <li>Email: <a class="hover:text-sky-700" href="mailto:contact@medicate.com.vn">contact@medicate.com.vn</a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="mt-8 text-xs text-slate-500">⚠️ Thông tin dược chỉ mang tính tham khảo — hãy hỏi ý kiến bác sĩ/DS khi cần.</p>
+    </div>
+  </footer>
+
+  <!-- Libs dùng chung -->
+  <script src="https://unpkg.com/dayjs/dayjs.min.js"></script>
+  <script src="https://unpkg.com/dayjs/plugin/customParseFormat.js"></script>
+  <script>dayjs.extend(window.dayjs_plugin_customParseFormat);</script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <!-- Barcode / scan -->
+  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+  <script src="https://unpkg.com/@ericblade/quagga2@2.0.0-beta.3/dist/quagga.js"></script>
+  <script src="assets/js/barcode.client.js"></script>
+  <script src="assets/js/scan.js"></script>
+
+  <!-- Script chung -->
+  <script src="assets/js/nav.js"></script>
+  <script src="assets/js/status-watcher.js"></script>
+  <script src="assets/js/reminder-watcher.js"></script>
+
+  <!-- Script kho + tra cứu thuốc -->
+  <script src="assets/js/thuoc.js"></script>
+  <script src="assets/js/transvi.js"></script>
+  <script src="assets/js/kho.js"></script>
+
+  <script>
+    (function () {
+      const tabKho   = document.getElementById('tabKho');
+      const tabThuoc = document.getElementById('tabThuoc');
+      const chatKho  = document.getElementById('chatKho');
+      const chatThuoc= document.getElementById('chatThuoc');
+
+      function activate(which){
+        const isKho = which === 'kho';
+        tabKho.setAttribute('aria-pressed', String(isKho));
+        tabThuoc.setAttribute('aria-pressed', String(!isKho));
+        chatKho.classList.toggle('hidden', !isKho);
+        chatThuoc.classList.toggle('hidden', isKho);
+      }
+      tabKho?.addEventListener('click',   () => activate('kho'));
+      tabThuoc?.addEventListener('click', () => activate('thuoc'));
+      activate('kho');
+
+      // Helper để trang khác gọi filter nhanh
+      window.selectStatus = function(mode){
+        const btn = document.querySelector(`.filter-chip[data-filter="${mode}"]`)
+                 || document.querySelector(`.filter-chip[data-filter="all"]`);
+        if(btn){
+          btn.click();
+          document.getElementById('tableBody')?.scrollIntoView({behavior:'smooth', block:'start'});
+        }
+      };
+    })();
+  </script>
+</body>
+</html>
