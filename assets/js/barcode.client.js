@@ -12,7 +12,7 @@
   // ==============================
   // Đặt URL proxy Search (Render) — KHÔNG có dấu '/' cuối.
   // Có thể override bằng localStorage.setItem('medicate_search_proxy', 'https://...') cho tiện test.
-  const DEFAULT_PROXY = ""; // ví dụ: "https://medicate-search-proxy.onrender.com"
+  const DEFAULT_PROXY = "https://medicate-barcode.onrender.com/api/barcode";
   const SEARCH_PROXY = (localStorage.getItem('medicate_search_proxy') || DEFAULT_PROXY).replace(/\/$/, '');
 
   // ==============================

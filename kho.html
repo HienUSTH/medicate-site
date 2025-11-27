@@ -158,7 +158,7 @@
         </div>
 
         <div class="ml-auto w-full max-w-xs">
-          <input id="searchInput" type="search" placeholder="Tìm theo tên/alias..."
+          <input id="searchInput" type="search" placeholder="Tra cứu thông tin thuốc"
                  class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" />
         </div>
       </div>
@@ -205,27 +205,20 @@
           <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
         </table>
       </div>
-
-      <div class="p-4 text-xs text-slate-500">
-        * Dữ liệu từ Google Sheets (read-only). Các thuốc thêm manual được lưu cục bộ (localStorage).
-      </div>
     </section>
 
     <!-- RIGHT: FORM + CATALOG + REMINDERS + CHAT -->
     <aside class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 h-fit sticky top-20">
       <!-- ADD (manual) -->
       <div class="mb-4">
-        <div class="text-base font-semibold mb-2">Thêm thuốc (manual)</div>
-        <div class="text-xs text-slate-600 mb-3">
-          Quét bằng GM65 hoặc dùng camera thiết bị; cũng có thể nhập mã thủ công.
-        </div>
+        <div class="text-base font-semibold mb-2">Thêm thuốc</div>
 
         <!-- Mã vạch / QR + scan -->
         <div class="mb-3">
           <label class="text-sm">Mã vạch / QR</label>
           <div class="flex gap-2">
             <input id="addBarcode" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"
-                   placeholder="Ví dụ: 8934901740173" inputmode="numeric" />
+                   placeholder="Ví dụ: 893xxxxxxxxxx" inputmode="numeric" />
             <button id="btnResolveBarcode" class="btn px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">Tra mã → Tên</button>
             <button id="btnScanCam" class="btn px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Quét bằng camera</button>
           </div>
@@ -239,7 +232,7 @@
           </div>
           <div>
             <label class="text-sm">Alias</label>
-            <input id="addAlias" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="Tên khác, phân liều, hãng… (tuỳ chọn)"/>
+            <input id="addAlias" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="Tên khác, phân liều, hãng…"/>
           </div>
           <div class="grid grid-cols-3 gap-2">
             <div class="col-span-1">
@@ -247,12 +240,12 @@
               <input id="addSL" type="number" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="0"/>
             </div>
             <div>
-              <label class="text-sm">HSD (DD/MM/YYYY)</label>
-              <input id="addHSD" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="31/12/2025"/>
+              <label class="text-sm">HSD</label>
+              <input id="addHSD" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="DD/MM/YYYY"/>
             </div>
             <div>
-              <label class="text-sm">Ngày nhập (DD/MM/YYYY)</label>
-              <input id="addNgayNhap" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="03/11/2025"/>
+              <label class="text-sm">Ngày nhập</label>
+              <input id="addNgayNhap" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="DD/MM/YYYY"/>
             </div>
           </div>
           <div class="flex items-center gap-2 pt-1">
@@ -265,7 +258,6 @@
 
       <!-- Catalog -->
       <div class="text-base font-semibold mb-2">Danh mục thuốc nội phổ biến</div>
-      <div class="text-sm text-slate-600 mb-3">Mục đã có trong tủ sẽ tô nền xanh.</div>
       <div class="flex items-center gap-2 mb-3">
         <button id="btnToggleMissing" class="btn px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">Xem mục thiếu</button>
         <span id="coverageBadge" class="ml-auto text-xs px-2 py-1 rounded-full bg-slate-100">Coverage: …</span>
@@ -302,20 +294,12 @@
     Hỏi nhanh về kho thuốc: số lượng, hạn dùng, thuốc sắp hết hạn...
   </div>
 
-  <!-- danh sách câu hỏi/ trả lời -->
-  <div id="chatList"
-       class="text-sm space-y-2 max-h-[220px] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-    <div class="text-xs text-slate-500">
-      Gõ câu hỏi vào ô bên dưới hoặc bấm một gợi ý có sẵn.
-    </div>
-  </div>
-
   <!-- ô nhập + nút gửi -->
   <div class="flex items-start gap-2">
     <textarea id="chatInput"
               rows="2"
               class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm resize-none focus:outline-none focus:ring focus:ring-sky-200"
-              placeholder="Ví dụ: Thuốc nào sắp hết hạn trong 30 ngày tới?"></textarea>
+              placeholder="Ví dụ: Thuốc số lượng dưới 10"></textarea>
     <button id="btnSend"
             type="button"
             class="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm">
@@ -583,10 +567,18 @@
   <script>dayjs.extend(window.dayjs_plugin_customParseFormat);</script>
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
-  <!-- Barcode / scan -->
+    <!-- Barcode / scan -->
   <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
   <script src="https://unpkg.com/@ericblade/quagga2@2.0.0-beta.3/dist/quagga.js"></script>
-  <script src="assets/js/barcode.client.js"></script>
+  <script src="assets/js/gm65-watcher.js"></script>
+
+  <!-- khai báo URL backend Render cho barcode -->
+  <script>
+    window.MEDICATE_API_BASE = 'https://medicate-barcode.onrender.com';
+  </script>
+
+  <!-- client barcode sử dụng backend -->
+  <script src="assets/js/barcode.js"></script>
   <script src="assets/js/scan.js"></script>
 
   <!-- Script chung -->
