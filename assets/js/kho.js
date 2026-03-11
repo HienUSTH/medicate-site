@@ -1,11 +1,5 @@
-/***********************
- * KHO – BẢN ỔN ĐỊNH RÚT GỌN
- * Chỉ đọc MedData và hiển thị bảng
- ***********************/
-
 const MEDDATA_FILE_ID = '10zl4y1Yoj7tuOPH6zZQIKWlbwOJL0fahVK0A1r_86eQ';
 const MEDDATA_GID     = '305557211';
-
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${MEDDATA_FILE_ID}/export?format=csv&gid=${MEDDATA_GID}`;
 
 let RAW_ROWS = [];
@@ -138,7 +132,7 @@ async function loadAll() {
     const med = await parseCSV(CSV_URL);
 
     if (!Array.isArray(med) || !med.length) {
-      renderError('Không tải được dữ liệu từ Google Sheets. Hãy kiểm tra FILE_ID, gid và quyền chia sẻ "Anyone with the link - Viewer".');
+      renderError('Không tải được dữ liệu từ Google Sheets.');
       return;
     }
 
@@ -147,7 +141,6 @@ async function loadAll() {
       const aliasRaw    = getByHeader(r, ['ALIAS']);
       const soLuongRaw  = getByHeader(r, ['SỐ LƯỢNG', 'SO LUONG', 'Số lượng']);
       const hsdRaw      = getByHeader(r, ['HSD']);
-      const maSpRaw     = getByHeader(r, ['MÃ SẢN PHẨM', 'MA SAN PHAM', 'Mã sản phẩm']);
       const ngayNhapRaw = getByHeader(r, ['NGÀY NHẬP', 'NGAY NHAP', 'Ngày nhập']);
 
       const ten = String(tenRaw || '').trim();
@@ -155,7 +148,6 @@ async function loadAll() {
       const soLuong = Number(String(soLuongRaw || '').replace(/[^\d.-]/g, '')) || 0;
       const hsd = parseVNDate(hsdRaw);
       const ngayNhap = parseVNDate(ngayNhapRaw);
-
       const daysLeft = hsd ? hsd.diff(today, 'day') : null;
 
       return {
@@ -164,7 +156,6 @@ async function loadAll() {
         soLuong,
         hsd: hsd ? hsd.format('DD/MM/YYYY') : String(hsdRaw || '').trim(),
         ngayNhap: ngayNhap ? ngayNhap.format('DD/MM/YYYY') : String(ngayNhapRaw || '').trim(),
-        maSp: String(maSpRaw || '').trim(),
         daysLeft: daysLeft == null ? '' : daysLeft,
         trangThai: statusFromDaysLeft(daysLeft)
       };
@@ -221,13 +212,11 @@ function applyFilters(){
 
   VIEW_ROWS = RAW_ROWS.filter(row => {
     const hay = `${nn(row.ten)} ${nn(row.alias)}`;
-
     if (q && !hay.includes(q)) return false;
     if (mode === 'ok'      && row.trangThai !== 'Còn hạn')      return false;
     if (mode === 'soon'    && row.trangThai !== 'Sắp hết hạn')  return false;
     if (mode === 'expired' && row.trangThai !== 'Hết hạn')      return false;
     if (Number(row.soLuong) > thr) return false;
-
     return true;
   });
 
@@ -252,18 +241,12 @@ function renderTable(){
   tbody.innerHTML = VIEW_ROWS.map((r, i) => `
     <tr class="${i % 2 ? 'bg-white' : 'bg-slate-50/40'} hover:bg-sky-50">
       <td class="py-2.5 px-3">${escapeHtml(r.ten || '')}</td>
-      <td class="py-2.5 px-3 bg-sky-50/50">
-        <div class="truncate max-w-[28ch] text-slate-700" title="${escapeHtml(r.alias || '')}">
-          ${escapeHtml(r.alias || '')}
-        </div>
-      </td>
+      <td class="py-2.5 px-3 bg-sky-50/50">${escapeHtml(r.alias || '')}</td>
       <td class="py-2.5 px-3 text-right bg-slate-50 mono">${r.soLuong}</td>
       <td class="py-2.5 px-3 whitespace-nowrap bg-indigo-50/40 mono">${escapeHtml(r.hsd || '')}</td>
       <td class="py-2.5 px-3 whitespace-nowrap bg-indigo-50/20 mono">${escapeHtml(r.ngayNhap || '')}</td>
       <td class="py-2.5 px-3 text-center whitespace-nowrap">${statusBadge(r.trangThai || '')}</td>
-      <td class="py-2.5 px-3 text-right whitespace-nowrap bg-slate-50/60 mono">
-        ${fmtDaysLeft(r.daysLeft)}
-      </td>
+      <td class="py-2.5 px-3 text-right whitespace-nowrap bg-slate-50/60 mono">${fmtDaysLeft(r.daysLeft)}</td>
     </tr>
   `).join('');
 }
@@ -274,6 +257,8 @@ const CHIP_ACTIVE = {
   soon:    'bg-amber-500 text-white border-amber-500',
   expired: 'bg-rose-600 text-white border-rose-600'
 };
+
+const CHIP_BASE = new Map();
 
 function setActiveChip(btn){
   document.querySelectorAll('.filter-chip').forEach(b => {
@@ -317,12 +302,7 @@ function initEvents(){
 document.addEventListener('DOMContentLoaded', () => {
   initEvents();
   loadAll();
-
   setInterval(() => {
     if (!document.hidden) loadAll();
   }, 15000);
-
-  if (typeof window.wireTabsForThuoc === 'function') {
-    window.wireTabsForThuoc();
-  }
 });
