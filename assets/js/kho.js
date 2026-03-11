@@ -1,39 +1,19 @@
 /***********************
  * KHO – BẢN ỔN ĐỊNH RÚT GỌN
- * Mục tiêu:
- * - đọc MedData từ Google Sheets
- * - hiển thị bảng kho ổn định
- * - chỉ dùng NGÀY, không dùng GIỜ
+ * Chỉ đọc MedData và hiển thị bảng
  ***********************/
 
-/* ===== CONFIG ===== */
 const MEDDATA_FILE_ID = '10zl4y1Yoj7tuOPH6zZQIKWlbwOJL0fahVK0A1r_86eQ';
 const MEDDATA_GID     = '305557211';
 
-// Nếu chưa dùng catalog thì để rỗng
-const DANHMUC_FILE_ID = '10zl4y1Yoj7tuOPH6zZQIKWlbwOJL0fahVK0A1r_86eQ';
-const DANHMUC_GID     = '';
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${MEDDATA_FILE_ID}/export?format=csv&gid=${MEDDATA_GID}`;
 
-const CSV_URLS = {
-  MedData: `https://docs.google.com/spreadsheets/d/${MEDDATA_FILE_ID}/export?format=csv&gid=${MEDDATA_GID}`,
-  DanhMucSearch: DANHMUC_GID
-    ? `https://docs.google.com/spreadsheets/d/${DANHMUC_FILE_ID}/export?format=csv&gid=${DANHMUC_GID}`
-    : ''
-};
-
-
-/* ===== STATE ===== */
 let RAW_ROWS = [];
 let VIEW_ROWS = [];
-let CATALOG = [];
-let showMissingOnly = false;
 let MAX_QTY = 0;
 const CHIP_BASE = new Map();
 
-
-/* ===== HELPERS ===== */
 function parseCSV(url){
-  if (!url) return Promise.resolve([]);
   const bust = (url.includes('?') ? '&' : '?') + '_ts=' + Date.now();
   return fetch(url + bust, { cache: 'no-store' })
     .then(r => {
@@ -83,19 +63,16 @@ function parseVNDate(raw){
   let s = String(raw).trim();
   if (!s) return null;
 
-  // Excel serial
   if (/^\d{3,5}$/.test(s)){
     const base = dayjs('1899-12-30');
     return base.add(parseInt(s,10),'day').startOf('day');
   }
 
-  // yyyy-mm-dd...
   if (/^\d{4}-\d{2}-\d{2}/.test(s)){
     const d = dayjs(s);
     if (d.isValid()) return d.startOf('day');
   }
 
-  // dd/mm/yyyy hoặc dd-mm-yyyy
   const m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
   if (m){
     let dd = Number(m[1]);
@@ -119,11 +96,6 @@ function parseVNDate(raw){
   }
 
   return null;
-}
-
-function fmtVN(d) {
-  const x = parseVNDate(d);
-  return x ? x.format('DD/MM/YYYY') : '';
 }
 
 function statusFromDaysLeft(d){
@@ -160,20 +132,17 @@ function renderError(msg){
   `;
 }
 
-
-/* ===== LOAD DATA ===== */
 async function loadAll() {
   try {
     const today = dayjs().startOf('day');
+    const med = await parseCSV(CSV_URL);
 
-    // MedData
-    const med = await parseCSV(CSV_URLS.MedData);
     if (!Array.isArray(med) || !med.length) {
       renderError('Không tải được dữ liệu từ Google Sheets. Hãy kiểm tra FILE_ID, gid và quyền chia sẻ "Anyone with the link - Viewer".');
       return;
     }
 
-    RAW_ROWS = med.map((r, idx) => {
+    RAW_ROWS = med.map((r) => {
       const tenRaw      = getByHeader(r, ['TÊN THUỐC GỐC', 'TEN THUOC GOC', 'Tên thuốc gốc']);
       const aliasRaw    = getByHeader(r, ['ALIAS']);
       const soLuongRaw  = getByHeader(r, ['SỐ LƯỢNG', 'SO LUONG', 'Số lượng']);
@@ -197,8 +166,7 @@ async function loadAll() {
         ngayNhap: ngayNhap ? ngayNhap.format('DD/MM/YYYY') : String(ngayNhapRaw || '').trim(),
         maSp: String(maSpRaw || '').trim(),
         daysLeft: daysLeft == null ? '' : daysLeft,
-        trangThai: statusFromDaysLeft(daysLeft),
-        _sheetRow: idx + 2
+        trangThai: statusFromDaysLeft(daysLeft)
       };
     }).filter(x => x.ten);
 
@@ -213,30 +181,6 @@ async function loadAll() {
       qtyVal.textContent = slider.value;
     }
 
-    // Catalog (optional)
-    if (CSV_URLS.DanhMucSearch) {
-      try {
-        const dm = await parseCSV(CSV_URLS.DanhMucSearch);
-        const setKho = new Set(RAW_ROWS.map(x => nn(x.ten)).filter(Boolean));
-
-        CATALOG = dm.map(r => {
-          const ten = getByHeader(r, ['TÊN THUỐC GỐC', 'TEN THUOC GOC', 'Tên thuốc gốc']);
-          const alias = getByHeader(r, ['ALIAS']);
-          return {
-            ten: String(ten || '').trim(),
-            alias: String(alias || '').trim(),
-            has: setKho.has(nn(ten))
-          };
-        }).filter(x => x.ten);
-      } catch (err) {
-        console.warn('Không tải được DanhMucSearch:', err);
-        CATALOG = [];
-      }
-    } else {
-      CATALOG = [];
-    }
-
-    renderCatalog();
     applyFilters();
 
   } catch (err) {
@@ -245,31 +189,6 @@ async function loadAll() {
   }
 }
 
-
-/* ===== CATALOG ===== */
-function renderCatalog(){
-  const list = document.getElementById('catalogList');
-  const badge = document.getElementById('coverageBadge');
-
-  if (badge) {
-    const total = CATALOG.length;
-    const have = CATALOG.filter(x => x.has).length;
-    const cov = total ? Math.round(have / total * 100) : 0;
-    badge.textContent = `Coverage: ${cov}% (${have}/${total})`;
-  }
-
-  if (!list) return;
-
-  const data = showMissingOnly ? CATALOG.filter(x => !x.has) : CATALOG;
-  list.innerHTML = data.map(x => `
-    <div class="px-3 py-1.5 rounded-lg border ${x.has ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50'}">
-      ${escapeHtml(x.ten)}
-    </div>
-  `).join('');
-}
-
-
-/* ===== TABLE ===== */
 function statusBadge(st){
   const map = {
     'Hết hạn':'bg-rose-100 text-rose-700 border-rose-200',
@@ -349,8 +268,6 @@ function renderTable(){
   `).join('');
 }
 
-
-/* ===== EVENTS ===== */
 const CHIP_ACTIVE = {
   all:     'bg-sky-600 text-white border-sky-600',
   ok:      'bg-emerald-600 text-white border-emerald-600',
@@ -395,27 +312,15 @@ function initEvents(){
       applyFilters();
     });
   }
-
-  const btnToggle = document.getElementById('btnToggleMissing');
-  if (btnToggle) {
-    btnToggle.textContent = 'Xem mục thiếu';
-    btnToggle.addEventListener('click', () => {
-      showMissingOnly = !showMissingOnly;
-      btnToggle.textContent = showMissingOnly ? 'Hiện tất cả' : 'Xem mục thiếu';
-      renderCatalog();
-    });
-  }
 }
 
-
-/* ===== BOOT ===== */
 document.addEventListener('DOMContentLoaded', () => {
   initEvents();
   loadAll();
 
   setInterval(() => {
     if (!document.hidden) loadAll();
-  }, 20000);
+  }, 15000);
 
   if (typeof window.wireTabsForThuoc === 'function') {
     window.wireTabsForThuoc();
