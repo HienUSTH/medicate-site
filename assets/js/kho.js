@@ -61,19 +61,43 @@ const nn = s => String(s ?? '')
 
 function parseVNDate(raw){
   if (raw == null) return null;
-  let s = String(raw).trim(); if (!s) return null;
+  let s = String(raw).trim();
+  if (!s) return null;
 
-  // Excel serial
   if (/^\d{3,5}$/.test(s)){
     const base = dayjs('1899-12-30');
     return base.add(parseInt(s,10),'day');
   }
 
-  // yyyy-mm-dd
   if (/^\d{4}-\d{2}-\d{2}/.test(s)){
-    const d=dayjs(s);
-    if (d.isValid()) return d;
+    const d = dayjs(s);
+    if (d.isValid()) return d.startOf('day');
   }
+
+  const m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  if (m){
+    let dd = Number(m[1]);
+    let mm = Number(m[2]);
+    let yy = Number(m[3]);
+
+    if (yy < 100) yy += 2000;
+    mm = Math.max(1, Math.min(12, mm));
+
+    const first = dayjs(`${yy}-${String(mm).padStart(2,'0')}-01`);
+    dd = Math.max(1, Math.min(first.daysInMonth(), dd));
+
+    const d = dayjs(`${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`);
+    if (d.isValid()) return d.startOf('day');
+  }
+
+  const fs = ['DD/MM/YYYY','D/M/YYYY','DD-MM-YYYY','D-M-YYYY','YYYY-MM-DD'];
+  for (const f of fs){
+    const d = dayjs(s, f, true);
+    if (d.isValid()) return d.startOf('day');
+  }
+
+  return null;
+}
 
 function parseVNDateTime(raw){
   if (raw == null) return null;
