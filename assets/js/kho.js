@@ -3,10 +3,18 @@
  ***********************/
 
 /* ===== CONFIG ===== */
-const FILE_ID = '1ZsRkVHNq5XKV-0R6abUW3zlleBZqjXqjJzaDu90AneI';
+const MEDDATA_FILE_ID = '1qK6l4APpMpJn06TY45HZdreSfIOd9tjPyJ0wtT15cNw';
+const MEDDATA_GID     = '0';
+
+// nếu chưa có tab DanhMucSearch ở sheet mới thì để rỗng
+const DANHMUC_FILE_ID = '1qK6l4APpMpJn06TY45HZdreSfIOd9tjPyJ0wtT15cNw';
+const DANHMUC_GID     = '';
+
 const CSV_URLS = {
-  MedData:       `https://docs.google.com/spreadsheets/d/${FILE_ID}/export?format=csv&gid=0`,
-  DanhMucSearch: `https://docs.google.com/spreadsheets/d/${FILE_ID}/export?format=csv&gid=1041829227`
+  MedData: `https://docs.google.com/spreadsheets/d/${MEDDATA_FILE_ID}/export?format=csv&gid=${MEDDATA_GID}`,
+  DanhMucSearch: DANHMUC_GID
+    ? `https://docs.google.com/spreadsheets/d/${DANHMUC_FILE_ID}/export?format=csv&gid=${DANHMUC_GID}`
+    : ''
 };
 
 // ===== REMINDER API (Google Apps Script Web App) =====
@@ -34,8 +42,13 @@ const LS_KHO_TRASH  = 'MEDICATE_KHO_TRASH_V1';      // list events (delete/edit)
 
 /* ===== UTILS ===== */
 function parseCSV(url){
-  return fetch(url)
-    .then(r => r.text())
+  if (!url) return Promise.resolve([]);
+  const bust = (url.includes('?') ? '&' : '?') + '_ts=' + Date.now();
+  return fetch(url + bust, { cache: 'no-store' })
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
     .then(t => Papa.parse(t, { header:true, skipEmptyLines:true }).data);
 }
 
@@ -99,8 +112,15 @@ function statusFromDaysLeft(d){
 }
 
 function rowKeyOf(r){
-  // Khóa ổn định cho override/trash (áp dụng cả sheet & custom)
-  return `${nn(r.ten)}|${nn(r.alias)}|${fmtVN(r.hsd)}|${fmtVN(r.ngayNhap)}|${r._src||'unknown'}`;
+  return [
+    nn(r.ten),
+    nn(r.alias),
+    fmtVN(r.hsd),
+    fmtVNDateTime(r.ngayNhap) || String(r.ngayNhap || ''),
+    String(r.maSp || ''),
+    String(r._sheetRow || ''),
+    r._src || 'unknown'
+  ].join('|');
 }
 
 function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
@@ -198,17 +218,20 @@ async function loadAll() {
     }
 
     // Parse sheet rows (base)
-    SHEET_ROWS = med.map(r => {
+    SHEET_ROWS = med.map((r, idx) => {
       const hsd      = parseVNDate(r['HSD']);
-      const ngayNhap = parseVNDate(r['NGÀY NHẬP'] || r['Ngày nhập'] || r['NGAY NHAP']);
+      const ngayNhap = parseVNDateTime(r['NGÀY NHẬP'] || r['Ngày nhập'] || r['NGAY NHAP']);
       const soLuong  = Number(String(r['SỐ LƯỢNG'] || r['Số lượng'] || r['SO LUONG']).replace(/[^\d.-]/g, '')) || 0;
+      const maSp     = r['MÃ SẢN PHẨM'] || r['Mã sản phẩm'] || r['MA SAN PHAM'] || '';
 
       return {
         ten:       r['TÊN THUỐC GỐC'] || r['TEN THUOC GOC'] || r['Tên thuốc gốc'] || '',
         alias:     r['ALIAS'] || '',
         soLuong,
         hsd:       hsd ? hsd.format('DD/MM/YYYY') : (r['HSD'] || ''),
-        ngayNhap:  ngayNhap ? ngayNhap.format('DD/MM/YYYY') : (r['NGÀY NHẬP'] || r['Ngày nhập'] || ''),
+        ngayNhap:  ngayNhap ? ngayNhap.format('DD/MM/YYYY HH:mm:ss') : (r['NGÀY NHẬP'] || r['Ngày nhập'] || ''),
+        maSp,
+        _sheetRow: idx + 2,
         _src:      'sheet'
       };
     });
@@ -1685,12 +1708,17 @@ function initEvents(){
 document.addEventListener('DOMContentLoaded', () => {
   try {
     initEvents();
-    loadAll();          // gọi load dữ liệu từ Google Sheets
+    loadAll();
+
+    // tự refresh mỗi 20 giây nếu tab đang mở
+    setInterval(() => {
+      if (!document.hidden) loadAll();
+    }, 20000);
+
   } catch (err) {
     console.error('Kho – boot error:', err);
   }
 
-  // Tab “Tra cứu thuốc” ở pane phải (file thuoc.js)
   if (typeof window.wireTabsForThuoc === 'function') {
     window.wireTabsForThuoc();
   }
