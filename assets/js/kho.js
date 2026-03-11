@@ -75,6 +75,37 @@ function parseVNDate(raw){
     if (d.isValid()) return d;
   }
 
+function parseVNDateTime(raw){
+  if (raw == null) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+
+  const formats = [
+    'D/M/YYYY H:mm:ss',
+    'DD/MM/YYYY HH:mm:ss',
+    'D/M/YYYY H:mm',
+    'DD/MM/YYYY HH:mm',
+    'D/M/YYYY',
+    'DD/MM/YYYY',
+    'YYYY-MM-DD HH:mm:ss',
+    'YYYY-MM-DD HH:mm',
+    'YYYY-MM-DD'
+  ];
+
+  for (const f of formats) {
+    const d = dayjs(s, f, true);
+    if (d.isValid()) return d;
+  }
+
+  const d = dayjs(s);
+  return d.isValid() ? d : null;
+}
+
+function fmtVNDateTime(raw){
+  const d = parseVNDateTime(raw);
+  return d ? d.format('DD/MM/YYYY HH:mm:ss') : '';
+}
+  
   // dd/mm/yyyy
   const m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
   if (m){
