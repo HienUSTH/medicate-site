@@ -99,36 +99,50 @@ function parseVNDate(raw){
   return null;
 }
 
-function parseVNDateTime(raw){
+function parseVNDate(raw){
   if (raw == null) return null;
-  const s = String(raw).trim();
+  let s = String(raw).trim();
   if (!s) return null;
 
-  const formats = [
-    'D/M/YYYY H:mm:ss',
-    'DD/MM/YYYY HH:mm:ss',
-    'D/M/YYYY H:mm',
-    'DD/MM/YYYY HH:mm',
-    'D/M/YYYY',
-    'DD/MM/YYYY',
-    'YYYY-MM-DD HH:mm:ss',
-    'YYYY-MM-DD HH:mm',
-    'YYYY-MM-DD'
-  ];
-
-  for (const f of formats) {
-    const d = dayjs(s, f, true);
-    if (d.isValid()) return d;
+  if (/^\d{3,5}$/.test(s)){
+    const base = dayjs('1899-12-30');
+    return base.add(parseInt(s,10),'day').startOf('day');
   }
 
-  const d = dayjs(s);
-  return d.isValid() ? d : null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)){
+    const d = dayjs(s);
+    if (d.isValid()) return d.startOf('day');
+  }
+
+  const m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  if (m){
+    let dd = Number(m[1]);
+    let mm = Number(m[2]);
+    let yy = Number(m[3]);
+
+    if (yy < 100) yy += 2000;
+    mm = Math.max(1, Math.min(12, mm));
+
+    const first = dayjs(`${yy}-${String(mm).padStart(2,'0')}-01`);
+    dd = Math.max(1, Math.min(first.daysInMonth(), dd));
+
+    const d = dayjs(`${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`);
+    if (d.isValid()) return d.startOf('day');
+  }
+
+  const fs = ['DD/MM/YYYY','D/M/YYYY','DD-MM-YYYY','D-M-YYYY','YYYY-MM-DD'];
+  for (const f of fs){
+    const d = dayjs(s, f, true);
+    if (d.isValid()) return d.startOf('day');
+  }
+
+  return null;
 }
 
-function fmtVNDateTime(raw){
-  const d = parseVNDateTime(raw);
-  return d ? d.format('DD/MM/YYYY HH:mm:ss') : '';
-}
+const fmtVN = (d) => {
+  const x = parseVNDate(d);
+  return x ? x.format('DD/MM/YYYY') : '';
+};
   
   // dd/mm/yyyy
   const m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
@@ -173,7 +187,7 @@ function rowKeyOf(r){
     nn(r.ten),
     nn(r.alias),
     fmtVN(r.hsd),
-    fmtVNDateTime(r.ngayNhap) || String(r.ngayNhap || ''),
+    fmtVN(r.ngayNhap),
     String(r.maSp || ''),
     String(r._sheetRow || ''),
     r._src || 'unknown'
@@ -276,18 +290,24 @@ async function loadAll() {
 
     // Parse sheet rows (base)
     SHEET_ROWS = med.map((r, idx) => {
-      const hsd      = parseVNDate(r['HSD']);
-      const ngayNhap = parseVNDateTime(r['NGÀY NHẬP'] || r['Ngày nhập'] || r['NGAY NHAP']);
-      const soLuong  = Number(String(r['SỐ LƯỢNG'] || r['Số lượng'] || r['SO LUONG']).replace(/[^\d.-]/g, '')) || 0;
-      const maSp     = r['MÃ SẢN PHẨM'] || r['Mã sản phẩm'] || r['MA SAN PHAM'] || '';
-
+      const hsdRaw      = getByHeader(r, ['HSD']);
+      const ngayNhapRaw = getByHeader(r, ['NGÀY NHẬP', 'NGAY NHAP', 'Ngày nhập']);
+      const soLuongRaw  = getByHeader(r, ['SỐ LƯỢNG', 'SO LUONG', 'Số lượng']);
+      const maSp        = getByHeader(r, ['MÃ SẢN PHẨM', 'MA SAN PHAM', 'Mã sản phẩm']);
+      const tenRaw      = getByHeader(r, ['TÊN THUỐC GỐC', 'TEN THUOC GOC', 'Tên thuốc gốc']);
+      const aliasRaw    = getByHeader(r, ['ALIAS']);
+    
+      const hsd      = parseVNDate(hsdRaw);
+      const ngayNhap = parseVNDate(ngayNhapRaw);
+      const soLuong  = Number(String(soLuongRaw).replace(/[^\d.-]/g, '')) || 0;
+    
       return {
-        ten:       r['TÊN THUỐC GỐC'] || r['TEN THUOC GOC'] || r['Tên thuốc gốc'] || '',
-        alias:     r['ALIAS'] || '',
+        ten:       tenRaw || '',
+        alias:     aliasRaw || '',
         soLuong,
-        hsd:       hsd ? hsd.format('DD/MM/YYYY') : (r['HSD'] || ''),
-        ngayNhap:  ngayNhap ? ngayNhap.format('DD/MM/YYYY HH:mm:ss') : (r['NGÀY NHẬP'] || r['Ngày nhập'] || ''),
-        maSp,
+        hsd:       hsd ? hsd.format('DD/MM/YYYY') : (hsdRaw || ''),
+        ngayNhap:  ngayNhap ? ngayNhap.format('DD/MM/YYYY') : (ngayNhapRaw || ''),
+        maSp:      maSp || '',
         _sheetRow: idx + 2,
         _src:      'sheet'
       };
