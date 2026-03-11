@@ -3,12 +3,14 @@
  ***********************/
 
 /* ===== CONFIG ===== */
-const MEDDATA_FILE_ID = '1qK6l4APpMpJn06TY45HZdreSfIOd9tjPyJ0wtT15cNw';
-const MEDDATA_GID     = '0';
+const MEDDATA_FILE_ID = '10zl4y1Yoj7tuOPH6zZQIKWlbwOJL0fahVK0A1r_86eQ';
 
-// nếu chưa có tab DanhMucSearch ở sheet mới thì để rỗng
-const DANHMUC_FILE_ID = '1qK6l4APpMpJn06TY45HZdreSfIOd9tjPyJ0wtT15cNw';
-const DANHMUC_GID     = '';
+// gid của tab MedData trong file Medicate
+const MEDDATA_GID = '305557211';
+
+// tạm thời chưa cần DanhMucSearch thì để rỗng
+const DANHMUC_FILE_ID = '10zl4y1Yoj7tuOPH6zZQIKWlbwOJL0fahVK0A1r_86eQ';
+const DANHMUC_GID = '';
 
 const CSV_URLS = {
   MedData: `https://docs.google.com/spreadsheets/d/${MEDDATA_FILE_ID}/export?format=csv&gid=${MEDDATA_GID}`,
