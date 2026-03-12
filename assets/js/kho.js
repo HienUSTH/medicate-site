@@ -1,308 +1,149 @@
-const MEDDATA_FILE_ID = '10zl4y1Yoj7tuOPH6zZQIKWlbwOJL0fahVK0A1r_86eQ';
-const MEDDATA_GID     = '305557211';
-const CSV_URL = `https://docs.google.com/spreadsheets/d/${MEDDATA_FILE_ID}/export?format=csv&gid=${MEDDATA_GID}`;
+const RAWVALID_SHEET_NAME  = 'RawValid';
+const MEDDATA_SHEET_NAME   = 'MedData';
+const SYNCSTATE_SHEET_NAME = 'SyncState';
 
-let RAW_ROWS = [];
-let VIEW_ROWS = [];
-let MAX_QTY = 0;
-const CHIP_BASE = new Map();
-
-function parseCSV(url){
-  const bust = (url.includes('?') ? '&' : '?') + '_ts=' + Date.now();
-  return fetch(url + bust, { cache: 'no-store' })
-    .then(r => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.text();
-    })
-    .then(t => Papa.parse(t, { header: true, skipEmptyLines: true }).data);
-}
-
-function nn(s) {
-  return String(s ?? '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/đ/g, 'd')
-    .replace(/[^\w\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function normHdr(s){
-  return String(s ?? '')
-    .replace(/^\uFEFF/, '')
+function normText_(s) {
+  return String(s || '')
     .trim()
-    .toLowerCase()
     .normalize('NFD')
-    .replace(/\p{Diacritic}/gu,'')
-    .replace(/đ/g,'d')
-    .replace(/[^\w\s]/g,' ')
-    .replace(/\s+/g,' ')
-    .trim();
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toUpperCase();
 }
 
-function getByHeader(row, names){
-  const entries = Object.entries(row || {});
-  for (const wanted of names) {
-    const nw = normHdr(wanted);
-    for (const [k, v] of entries) {
-      if (normHdr(k) === nw) return v;
-    }
+function findHeaderIndex_(headers, candidates) {
+  const normHeaders = headers.map(normText_);
+  for (const c of candidates) {
+    const idx = normHeaders.indexOf(normText_(c));
+    if (idx >= 0) return idx + 1;
   }
-  return '';
+  return 0;
 }
 
-function parseVNDate(raw){
-  if (raw == null) return null;
-  let s = String(raw).trim();
-  if (!s) return null;
-
-  if (/^\d{3,5}$/.test(s)){
-    const base = dayjs('1899-12-30');
-    return base.add(parseInt(s,10),'day').startOf('day');
+function columnToLetter_(column) {
+  let temp = '';
+  let letter = '';
+  while (column > 0) {
+    temp = (column - 1) % 26;
+    letter = String.fromCharCode(temp + 65) + letter;
+    column = (column - temp - 1) / 26;
   }
+  return letter;
+}
 
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)){
-    const d = dayjs(s);
-    if (d.isValid()) return d.startOf('day');
+function getSheetByNameStrict_(name) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  if (!sh) throw new Error('Không tìm thấy sheet: ' + name);
+  return sh;
+}
+
+function getOrCreateSyncState_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SYNCSTATE_SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(SYNCSTATE_SHEET_NAME);
+    sh.getRange(1, 1, 1, 2).setValues([['KEY', 'SYNCED_AT']]);
+    sh.hideSheet();
   }
-
-  const m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
-  if (m){
-    let dd = Number(m[1]);
-    let mm = Number(m[2]);
-    let yy = Number(m[3]);
-
-    if (yy < 100) yy += 2000;
-    mm = Math.max(1, Math.min(12, mm));
-
-    const first = dayjs(`${yy}-${String(mm).padStart(2,'0')}-01`);
-    dd = Math.max(1, Math.min(first.daysInMonth(), dd));
-
-    const d = dayjs(`${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`);
-    if (d.isValid()) return d.startOf('day');
-  }
-
-  const fs = ['DD/MM/YYYY','D/M/YYYY','DD-MM-YYYY','D-M-YYYY','YYYY-MM-DD'];
-  for (const f of fs){
-    const d = dayjs(s, f, true);
-    if (d.isValid()) return d.startOf('day');
-  }
-
-  return null;
+  return sh;
 }
 
-function statusFromDaysLeft(d){
-  if (d == null) return 'Còn hạn';
-  if (d <= 0) return 'Hết hạn';
-  if (d <= 30) return 'Sắp hết hạn';
-  return 'Còn hạn';
+function buildSyncKey_(ts, code, name) {
+  const t = Utilities.formatDate(new Date(ts), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  return [t, String(code || '').trim(), String(name || '').trim()].join('|');
 }
 
-function fmtDaysLeft(v){
-  if (v === '' || v == null) return '';
-  return v <= 0 ? `quá hạn ${Math.abs(v)} ngày` : `${v} ngày`;
+function getProcessedSet_() {
+  const sh = getOrCreateSyncState_();
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return new Set();
+  const values = sh.getRange(2, 1, lastRow - 1, 1).getValues().flat();
+  return new Set(values.map(x => String(x || '').trim()).filter(Boolean));
 }
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, m => ({
-    '&':'&amp;',
-    '<':'&lt;',
-    '>':'&gt;',
-    '"':'&quot;',
-    "'":'&#39;'
-  }[m]));
+function markProcessed_(key) {
+  const sh = getOrCreateSyncState_();
+  sh.appendRow([key, new Date()]);
 }
 
-function renderError(msg){
-  const tbody = document.getElementById('tableBody');
-  if (!tbody) return;
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="7" class="text-center py-6 text-rose-600">
-        ${escapeHtml(msg)}
-      </td>
-    </tr>
-  `;
+function ensureStatusFormula_(medSh, idxHSD, idxTrangThai) {
+  if (idxTrangThai <= 0 || idxHSD <= 0) return;
+  const cell = medSh.getRange(2, idxTrangThai);
+  if (cell.getFormula()) return;
+
+  const col = columnToLetter_(idxHSD);
+  cell.setFormula(
+    `=ARRAYFORMULA(IF(${col}2:${col}="","",IF(INT(${col}2:${col})<TODAY(),"Hết hạn",IF(INT(${col}2:${col})<=TODAY()+30,"Sắp hết hạn","Còn hạn"))))`
+  );
 }
 
-async function loadAll() {
+function syncRawValidToMedData_() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
   try {
-    const today = dayjs().startOf('day');
-    const med = await parseCSV(CSV_URL);
+    const rawSh = getSheetByNameStrict_(RAWVALID_SHEET_NAME);
+    const medSh = getSheetByNameStrict_(MEDDATA_SHEET_NAME);
 
-    if (!Array.isArray(med) || !med.length) {
-      renderError('Không tải được dữ liệu từ Google Sheets.');
-      return;
+    const rawLastRow = rawSh.getLastRow();
+    if (rawLastRow < 2) return;
+
+    const rawValues = rawSh.getRange(2, 1, rawLastRow - 1, 3).getValues();
+    const done = getProcessedSet_();
+
+    const headers = medSh.getRange(1, 1, 1, medSh.getLastColumn()).getValues()[0];
+    const idxName      = findHeaderIndex_(headers, ['TÊN THUỐC GỐC', 'TEN THUOC GOC']);
+    const idxAlias     = findHeaderIndex_(headers, ['ALIAS']);
+    const idxSoLuong   = findHeaderIndex_(headers, ['SỐ LƯỢNG', 'SO LUONG']);
+    const idxHSD       = findHeaderIndex_(headers, ['HSD']);
+    const idxMaSp      = findHeaderIndex_(headers, ['MÃ SẢN PHẨM', 'MA SAN PHAM']);
+    const idxNgayNhap  = findHeaderIndex_(headers, ['NGÀY NHẬP', 'NGAY NHAP']);
+    const idxTrangThai = findHeaderIndex_(headers, ['TRẠNG THÁI', 'TRANG THAI']);
+
+    if (idxName <= 0 || idxMaSp <= 0 || idxNgayNhap <= 0) {
+      throw new Error('MedData thiếu cột bắt buộc');
     }
 
-    RAW_ROWS = med.map((r) => {
-      const tenRaw      = getByHeader(r, ['TÊN THUỐC GỐC', 'TEN THUOC GOC', 'Tên thuốc gốc']);
-      const aliasRaw    = getByHeader(r, ['ALIAS']);
-      const soLuongRaw  = getByHeader(r, ['SỐ LƯỢNG', 'SO LUONG', 'Số lượng']);
-      const hsdRaw      = getByHeader(r, ['HSD']);
-      const ngayNhapRaw = getByHeader(r, ['NGÀY NHẬP', 'NGAY NHAP', 'Ngày nhập']);
+    for (const row of rawValues) {
+      const ts   = row[0];
+      const code = String(row[1] || '').trim();
+      const name = String(row[2] || '').trim();
 
-      const ten = String(tenRaw || '').trim();
-      const alias = String(aliasRaw || '').trim();
-      const soLuong = Number(String(soLuongRaw || '').replace(/[^\d.-]/g, '')) || 0;
-      const hsd = parseVNDate(hsdRaw);
-      const ngayNhap = parseVNDate(ngayNhapRaw);
-      const daysLeft = hsd ? hsd.diff(today, 'day') : null;
+      if (!ts || !code || !name) continue;
 
-      return {
-        ten,
-        alias,
-        soLuong,
-        hsd: hsd ? hsd.format('DD/MM/YYYY') : String(hsdRaw || '').trim(),
-        ngayNhap: ngayNhap ? ngayNhap.format('DD/MM/YYYY') : String(ngayNhapRaw || '').trim(),
-        daysLeft: daysLeft == null ? '' : daysLeft,
-        trangThai: statusFromDaysLeft(daysLeft)
-      };
-    }).filter(x => x.ten);
+      const key = buildSyncKey_(ts, code, name);
+      if (done.has(key)) continue;
 
-    MAX_QTY = RAW_ROWS.reduce((m, x) => Math.max(m, Number(x.soLuong) || 0), 0);
+      const newRow = medSh.getLastRow() + 1;
 
-    const slider = document.getElementById('qtySlider');
-    const qtyVal = document.getElementById('qtyVal');
-    if (slider && qtyVal) {
-      slider.min = 0;
-      slider.max = String(MAX_QTY || 0);
-      slider.value = String(MAX_QTY || 0);
-      qtyVal.textContent = slider.value;
+      medSh.getRange(newRow, idxName).setValue(name);
+      if (idxAlias > 0)   medSh.getRange(newRow, idxAlias).setValue('');
+      if (idxSoLuong > 0) medSh.getRange(newRow, idxSoLuong).setValue(1);
+      if (idxHSD > 0)     medSh.getRange(newRow, idxHSD).setValue('');
+      medSh.getRange(newRow, idxMaSp).setValue(code);
+      medSh.getRange(newRow, idxNgayNhap).setValue(new Date(ts));
+      medSh.getRange(newRow, idxNgayNhap).setNumberFormat('d/M/yyyy');
+
+      ensureStatusFormula_(medSh, idxHSD, idxTrangThai);
+
+      markProcessed_(key);
+      done.add(key);
     }
 
-    applyFilters();
-
-  } catch (err) {
-    console.error('loadAll error:', err);
-    renderError('Lỗi khi xử lý dữ liệu kho: ' + (err.message || String(err)));
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
   }
 }
 
-function statusBadge(st){
-  const map = {
-    'Hết hạn':'bg-rose-100 text-rose-700 border-rose-200',
-    'Sắp hết hạn':'bg-amber-100 text-amber-800 border-amber-200',
-    'Còn hạn':'bg-emerald-100 text-emerald-700 border-emerald-200'
-  };
-  const dot = st === 'Hết hạn'
-    ? 'bg-rose-500'
-    : st === 'Sắp hết hạn'
-      ? 'bg-amber-500'
-      : 'bg-emerald-500';
-
-  return `
-    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${map[st] || 'bg-slate-100'}">
-      <span class="inline-block w-1.5 h-1.5 rounded-full ${dot}"></span>${st}
-    </span>
-  `;
+function syncNow_() {
+  syncRawValidToMedData_();
 }
 
-function getActiveFilter(){
-  const el = document.querySelector('.filter-chip.active');
-  return el?.dataset.filter || 'all';
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Medicate Sync')
+    .addItem('Sync ngay bây giờ', 'syncNow_')
+    .addToUi();
 }
-
-function applyFilters(){
-  const q = nn(document.getElementById('searchInput')?.value || '');
-  const mode = getActiveFilter();
-  const slider = document.getElementById('qtySlider');
-  const thr = slider ? Number(slider.value) : Infinity;
-
-  VIEW_ROWS = RAW_ROWS.filter(row => {
-    const hay = `${nn(row.ten)} ${nn(row.alias)}`;
-    if (q && !hay.includes(q)) return false;
-    if (mode === 'ok'      && row.trangThai !== 'Còn hạn')      return false;
-    if (mode === 'soon'    && row.trangThai !== 'Sắp hết hạn')  return false;
-    if (mode === 'expired' && row.trangThai !== 'Hết hạn')      return false;
-    if (Number(row.soLuong) > thr) return false;
-    return true;
-  });
-
-  renderTable();
-}
-
-function renderTable(){
-  const tbody = document.getElementById('tableBody');
-  if (!tbody) return;
-
-  if (!VIEW_ROWS.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" class="text-center py-6 text-slate-500">
-          Không có dữ liệu
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = VIEW_ROWS.map((r, i) => `
-    <tr class="${i % 2 ? 'bg-white' : 'bg-slate-50/40'} hover:bg-sky-50">
-      <td class="py-2.5 px-3">${escapeHtml(r.ten || '')}</td>
-      <td class="py-2.5 px-3 bg-sky-50/50">${escapeHtml(r.alias || '')}</td>
-      <td class="py-2.5 px-3 text-right bg-slate-50 mono">${r.soLuong}</td>
-      <td class="py-2.5 px-3 whitespace-nowrap bg-indigo-50/40 mono">${escapeHtml(r.hsd || '')}</td>
-      <td class="py-2.5 px-3 whitespace-nowrap bg-indigo-50/20 mono">${escapeHtml(r.ngayNhap || '')}</td>
-      <td class="py-2.5 px-3 text-center whitespace-nowrap">${statusBadge(r.trangThai || '')}</td>
-      <td class="py-2.5 px-3 text-right whitespace-nowrap bg-slate-50/60 mono">${fmtDaysLeft(r.daysLeft)}</td>
-    </tr>
-  `).join('');
-}
-
-const CHIP_ACTIVE = {
-  all:     'bg-sky-600 text-white border-sky-600',
-  ok:      'bg-emerald-600 text-white border-emerald-600',
-  soon:    'bg-amber-500 text-white border-amber-500',
-  expired: 'bg-rose-600 text-white border-rose-600'
-};
-
-const CHIP_BASE = new Map();
-
-function setActiveChip(btn){
-  document.querySelectorAll('.filter-chip').forEach(b => {
-    const base = CHIP_BASE.get(b) || b.className;
-    CHIP_BASE.set(b, base.replace(/\s?active\b/, ''));
-    b.className = CHIP_BASE.get(b);
-  });
-
-  btn.className = (CHIP_BASE.get(btn) || btn.className) +
-    ' active ' + (CHIP_ACTIVE[btn.dataset.filter] || CHIP_ACTIVE.all);
-}
-
-function initEvents(){
-  document.querySelectorAll('.filter-chip').forEach(b => {
-    CHIP_BASE.set(b, b.className);
-  });
-
-  document.querySelectorAll('.filter-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setActiveChip(btn);
-      applyFilters();
-    });
-  });
-
-  const def = document.querySelector('.filter-chip[data-filter="all"]');
-  if (def) setActiveChip(def);
-
-  document.getElementById('searchInput')
-    ?.addEventListener('input', applyFilters);
-
-  const slider = document.getElementById('qtySlider');
-  const qtyVal = document.getElementById('qtyVal');
-  if (slider && qtyVal) {
-    slider.addEventListener('input', () => {
-      qtyVal.textContent = slider.value;
-      applyFilters();
-    });
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  initEvents();
-  loadAll();
-  setInterval(() => {
-    if (!document.hidden) loadAll();
-  }, 15000);
-});
