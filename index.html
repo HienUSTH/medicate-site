@@ -64,12 +64,12 @@
           <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
 
           <div class="relative" data-dd="user">
-            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
-              Người dùng
+            <button id="userMenuToggle" class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+              <span id="userMenuLabel">Người dùng</span>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
             </button>
             <div class="dd-menu absolute right-0 mt-3 hidden">
-              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
+              <div id="userMenuDesktopContent" class="w-64 rounded-2xl border bg-white shadow-xl p-2">
                 <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
                 <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
               </div>
@@ -108,9 +108,9 @@
           </div>
         </details>
         <a href="mini-dashboard.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Mini dashboard</a>
-        <details class="px-3 py-2 rounded-lg">
-          <summary class="cursor-pointer select-none">Người dùng</summary>
-          <div class="mt-2 pl-3 space-y-1">
+        <details id="mobileUserDetails" class="px-3 py-2 rounded-lg">
+          <summary id="mobileUserSummary" class="cursor-pointer select-none">Người dùng</summary>
+          <div id="mobileUserMenuContent" class="mt-2 pl-3 space-y-1">
             <a href="user.html?tab=signup" class="block py-1">• Đăng ký</a>
             <a href="user.html?tab=signin" class="block py-1">• Đăng nhập</a>
           </div>
@@ -228,7 +228,9 @@
   </footer>
 
   <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/nav.js"></script>
+  <script src="assets/js/auth-state.js"></script>
   <script src="assets/js/status-watcher.js"></script>
   <script src="assets/js/reminder-watcher.js"></script>
   <script src="assets/js/home.js"></script>
