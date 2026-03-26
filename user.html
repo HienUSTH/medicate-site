@@ -7,6 +7,9 @@
   <link rel="icon" href="assets/img/favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/auth-page.js"></script>
 <body class="bg-slate-50 text-slate-800">
   <main class="max-w-md mx-auto px-4 py-12">
     <h1 class="text-2xl md:text-3xl font-semibold text-center">Người dùng</h1>
@@ -81,78 +84,6 @@
     }
     switchTab(currentTab);
     tabBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
-
-    // 2. Cấu hình endpoint backend
-    const API_BASE = 'https://medicate-backend.onrender.com/api/auth'; // đổi thành domain thật khi deploy
-
-    // 3. Xử lý ĐĂNG KÝ
-    signupForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const msg = document.getElementById('signupMsg');
-      msg.textContent = 'Đang gửi...';
-      msg.className = 'text-xs text-slate-500';
-      try {
-        const body = {
-          fullname: e.target.username.value,
-          email: e.target.email.value,
-          password: e.target.password.value,
-        };
-        const res = await fetch(API_BASE + '/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          msg.textContent = data.message || 'Đăng ký thất bại';
-          msg.className = 'text-xs text-red-500';
-        } else {
-          msg.textContent = 'Đăng ký thành công. Bạn có thể đăng nhập.';
-          msg.className = 'text-xs text-green-600';
-          e.target.reset();
-          switchTab('signin');
-        }
-      } catch (err) {
-        msg.textContent = 'Lỗi kết nối server';
-        msg.className = 'text-xs text-red-500';
-      }
-    });
-
-    // 4. Xử lý ĐĂNG NHẬP
-    signinForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const msg = document.getElementById('signinMsg');
-      msg.textContent = 'Đang đăng nhập...';
-      msg.className = 'text-xs text-slate-500';
-      try {
-        const body = {
-          email: e.target.email.value,
-          password: e.target.password.value,
-        };
-        const res = await fetch(API_BASE + '/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          msg.textContent = data.message || 'Đăng nhập thất bại';
-          msg.className = 'text-xs text-red-500';
-        } else {
-          // Lưu token để trang khác dùng
-          localStorage.setItem('medicate_token', data.token);
-          msg.textContent = 'Đăng nhập thành công. Đang chuyển...';
-          msg.className = 'text-xs text-green-600';
-          // ví dụ chuyển sang trang dashboard
-          setTimeout(() => {
-            window.location.href = 'index.html';
-          }, 700);
-        }
-      } catch (err) {
-        msg.textContent = 'Lỗi kết nối server';
-        msg.className = 'text-xs text-red-500';
-      }
-    });
   </script>
 </body>
 </html>
