@@ -131,6 +131,53 @@
       return null;
     }
 
+    function toVietnameseAuthMessage(error, mode = 'generic') {
+      const rawMessage = error?.message || '';
+      const msg = rawMessage.toLowerCase();
+      const status = error?.status;
+      const code = error?.code;
+
+      if (status === 429 || msg.includes('rate limit')) {
+        return 'Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút.';
+      }
+
+      if (msg.includes('invalid login credentials')) {
+        return 'Email hoặc mật khẩu chưa đúng.';
+      }
+
+      if (msg.includes('user already registered')) {
+        return 'Email này đã được đăng ký.';
+      }
+
+      if (msg.includes('email not confirmed')) {
+        return 'Bạn cần xác nhận email trước khi đăng nhập.';
+      }
+
+      if (msg.includes('signup is disabled')) {
+        return 'Chức năng đăng ký hiện đang tạm tắt.';
+      }
+
+      if (msg.includes('email not authorized')) {
+        return 'Email này hiện chưa thể nhận thư xác nhận.';
+      }
+
+      if (msg.includes('password should be at least')) {
+        return 'Mật khẩu phải có ít nhất 6 ký tự.';
+      }
+
+      if (msg.includes('unable to validate email address') || msg.includes('invalid email')) {
+        return 'Địa chỉ email chưa đúng định dạng.';
+      }
+
+      if (status === 500 || code === 'unexpected_failure') {
+        return 'Hệ thống đang có lỗi tạm thời, vui lòng thử lại sau.';
+      }
+
+      return mode === 'signup'
+        ? 'Đăng ký chưa thành công, vui lòng thử lại.'
+        : 'Đăng nhập chưa thành công, vui lòng thử lại.';
+    }
+
     function wireEnterHandling() {
       document.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter') return;
@@ -185,13 +232,14 @@
         if (data.session) {
           setMessage(signupMsg, 'Đăng ký thành công. Bạn có thể đăng nhập ngay.', 'success');
         } else {
-          setMessage(signupMsg, 'Đăng ký thành công. Hãy kiểm tra email nếu bạn đang bật xác nhận email.', 'success');
+          setMessage(signupMsg, 'Đăng ký thành công. Vui lòng kiểm tra email để xác nhận tài khoản.', 'success');
         }
 
         signupForm.reset();
         switchTab('signin');
       } catch (error) {
-        setMessage(signupMsg, error?.message || 'Đăng ký thất bại', 'error');
+        console.error(error);
+        setMessage(signupMsg, toVietnameseAuthMessage(error, 'signup'), 'error');
       } finally {
         setLoading('signup', false);
       }
@@ -227,7 +275,8 @@
           window.location.href = 'index.html';
         }, 700);
       } catch (error) {
-        setMessage(signinMsg, error?.message || 'Đăng nhập thất bại', 'error');
+        console.error(error);
+        setMessage(signinMsg, toVietnameseAuthMessage(error, 'signin'), 'error');
       } finally {
         setLoading('signin', false);
       }
