@@ -7,19 +7,17 @@
   <link rel="icon" href="assets/img/favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/js/supabase-client.js"></script>
-<script src="assets/js/auth-page.js"></script>
 <body class="bg-slate-50 text-slate-800">
   <main class="max-w-md mx-auto px-4 py-12">
     <h1 class="text-2xl md:text-3xl font-semibold text-center">Người dùng</h1>
-    <div id="authTabs" class="mt-8 rounded-2xl border p-6 bg-white">
+
+    <div id="authTabs" class="mt-8 rounded-2xl border p-6 bg-white shadow-sm">
       <div class="flex gap-4">
         <button data-tab="signup" class="auth-tab px-4 py-2 rounded-lg bg-sky-600 text-white">Đăng ký</button>
         <button data-tab="signin" class="auth-tab px-4 py-2 rounded-lg border">Đăng nhập</button>
       </div>
+
       <div class="mt-6">
-        <!-- Đăng ký -->
         <form id="signupForm" class="space-y-4" autocomplete="off">
           <div>
             <label class="block text-sm mb-1" for="su_username">Tên người dùng</label>
@@ -37,7 +35,6 @@
           <p id="signupMsg" class="text-xs"></p>
         </form>
 
-        <!-- Đăng nhập -->
         <form id="signinForm" class="space-y-4 hidden" autocomplete="off">
           <div>
             <label class="block text-sm mb-1" for="si_email">Email</label>
@@ -52,17 +49,34 @@
         </form>
       </div>
     </div>
+
+    <div class="mt-6 rounded-2xl border bg-white p-4 text-sm">
+      <div class="font-medium">Trạng thái debug</div>
+      <p class="mt-2 text-slate-600">User hiện tại: <span id="debugUser">chưa đăng nhập</span></p>
+      <p class="text-slate-600">Session: <span id="debugSession">chưa có</span></p>
+      <button id="logoutBtn" type="button" class="mt-3 rounded-lg border px-3 py-2 text-sm hidden">Đăng xuất</button>
+    </div>
   </main>
+
   <script src="assets/js/nav.js"></script>
   <script src="assets/js/status-watcher.js"></script>
   <script src="assets/js/reminder-watcher.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // 1. Chọn tab theo URL ?tab=...
+    const SUPABASE_URL = 'https://kbdqkvcmfkuthlbbnaac.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZHFrdmNtZmt1dGhsYmJuYWFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0OTczNzIsImV4cCI6MjA5MDA3MzM3Mn0.8dDVYCZyvTYRR7pkeleTiW1vv9ktNiPD8dml0DU4HDw';
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const params = new URLSearchParams(window.location.search);
     const currentTab = params.get('tab') || 'signup';
     const signupForm = document.getElementById('signupForm');
     const signinForm = document.getElementById('signinForm');
     const tabBtns = document.querySelectorAll('.auth-tab');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const debugUser = document.getElementById('debugUser');
+    const debugSession = document.getElementById('debugSession');
 
     function switchTab(tab) {
       if (tab === 'signup') {
@@ -72,18 +86,124 @@
         signinForm.classList.remove('hidden');
         signupForm.classList.add('hidden');
       }
+
       tabBtns.forEach(btn => {
         if (btn.dataset.tab === tab) {
-          btn.classList.add('bg-sky-600','text-white');
+          btn.classList.add('bg-sky-600', 'text-white');
           btn.classList.remove('border');
         } else {
-          btn.classList.remove('bg-sky-600','text-white');
+          btn.classList.remove('bg-sky-600', 'text-white');
           btn.classList.add('border');
         }
       });
     }
+
     switchTab(currentTab);
     tabBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+    async function refreshDebug() {
+      const { data, error } = await sb.auth.getSession();
+      if (error) {
+        debugUser.textContent = 'lỗi lấy session';
+        debugSession.textContent = error.message;
+        logoutBtn.classList.add('hidden');
+        return;
+      }
+
+      const session = data.session;
+      if (!session) {
+        debugUser.textContent = 'chưa đăng nhập';
+        debugSession.textContent = 'chưa có';
+        logoutBtn.classList.add('hidden');
+        return;
+      }
+
+      debugUser.textContent = session.user.email || session.user.id;
+      debugSession.textContent = 'đã có';
+      logoutBtn.classList.remove('hidden');
+    }
+
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('signupMsg');
+      msg.textContent = 'Đang tạo tài khoản...';
+      msg.className = 'text-xs text-slate-500';
+
+      const username = e.target.username.value.trim();
+      const email = e.target.email.value.trim();
+      const password = e.target.password.value;
+
+      const { data, error } = await sb.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username }
+        }
+      });
+
+      if (error) {
+        msg.textContent = error.message || 'Đăng ký thất bại';
+        msg.className = 'text-xs text-red-500';
+        console.error('SIGNUP_ERROR', error);
+        return;
+      }
+
+      console.log('SIGNUP_OK', data);
+
+      if (data.session) {
+        msg.textContent = 'Đăng ký thành công. Hệ thống đã tạo session, bạn có thể dùng ngay.';
+      } else {
+        msg.textContent = 'Đăng ký thành công. Nếu bạn đang bật Confirm Email trong Supabase, hãy xác nhận email rồi đăng nhập.';
+      }
+
+      msg.className = 'text-xs text-green-600';
+      e.target.reset();
+      await refreshDebug();
+      switchTab('signin');
+    });
+
+    signinForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('signinMsg');
+      msg.textContent = 'Đang đăng nhập...';
+      msg.className = 'text-xs text-slate-500';
+
+      const email = e.target.email.value.trim();
+      const password = e.target.password.value;
+
+      const { data, error } = await sb.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        msg.textContent = error.message || 'Đăng nhập thất bại';
+        msg.className = 'text-xs text-red-500';
+        console.error('SIGNIN_ERROR', error);
+        return;
+      }
+
+      console.log('SIGNIN_OK', data);
+      msg.textContent = 'Đăng nhập thành công. Đang chuyển...';
+      msg.className = 'text-xs text-green-600';
+      await refreshDebug();
+
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 700);
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+      await sb.auth.signOut();
+      await refreshDebug();
+      switchTab('signin');
+    });
+
+    sb.auth.onAuthStateChange(async () => {
+      await refreshDebug();
+    });
+
+    refreshDebug();
   </script>
 </body>
 </html>
