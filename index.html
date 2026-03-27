@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Medicate</title>
   <meta name="description" content="Tủ thuốc thông minh - theo dõi nhiệt/ẩm, quản lý kho theo lô, AI tư vấn dược." />
-  <!-- FAVICONS (put this inside <head> on every page) -->
   <link rel="icon" href="assets/img/favicon.png">
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Nunito Sans (Semibold 600) -->
   <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     .font-nunito{font-family:"Nunito Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"}
@@ -29,7 +26,7 @@
           <a href="index.html" class="py-2 hover:text-sky-700">Trang chủ</a>
 
           <div class="relative" data-dd="devices">
-            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+            <button type="button" class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false">
               Thiết bị
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
             </button>
@@ -49,7 +46,7 @@
           <a href="kho.html" class="py-2 hover:text-sky-700">Kho thuốc</a>
 
           <div class="relative" data-dd="status">
-            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
+            <button type="button" class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false">
               Trạng thái
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
             </button>
@@ -64,14 +61,29 @@
           <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
 
           <div class="relative" data-dd="user">
-            <button id="userMenuToggle" class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
-              <span id="userMenuLabel">Người dùng</span>
+            <button id="userMenuToggle" type="button" class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false">
+              <span id="desktopUserLabel" data-auth-user-label>Người dùng</span>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
             </button>
             <div class="dd-menu absolute right-0 mt-3 hidden">
-              <div id="userMenuDesktopContent" class="w-64 rounded-2xl border bg-white shadow-xl p-2">
-                <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
-                <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
+              <div class="w-72 rounded-2xl border bg-white shadow-xl overflow-hidden">
+                <div data-auth="guest" class="p-2 space-y-1">
+                  <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
+                  <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
+                </div>
+
+                <div data-auth="user" class="hidden">
+                  <div class="px-4 py-3 border-b border-slate-200">
+                    <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Tài khoản</p>
+                    <p id="desktopAccountName" data-auth-name class="mt-1 text-sm font-semibold break-words">Chưa đăng nhập</p>
+                    <p id="desktopAccountEmail" data-auth-email class="mt-1 text-xs text-slate-500 break-all">—</p>
+                    <p class="mt-2 text-xs text-slate-500">Ngày tạo: <span id="desktopAccountCreatedAt" data-auth-created>—</span></p>
+                  </div>
+                  <div class="p-2 space-y-1">
+                    <button type="button" data-action="logout" class="w-full text-left px-3 py-2 rounded-lg text-red-600 hover:bg-red-50">Đăng xuất</button>
+                    <button type="button" data-action="delete-account" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Xóa tài khoản (làm sau)</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -108,11 +120,28 @@
           </div>
         </details>
         <a href="mini-dashboard.html" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Mini dashboard</a>
+
         <details id="mobileUserDetails" class="px-3 py-2 rounded-lg">
-          <summary id="mobileUserSummary" class="cursor-pointer select-none">Người dùng</summary>
-          <div id="mobileUserMenuContent" class="mt-2 pl-3 space-y-1">
+          <summary class="cursor-pointer select-none">
+            <span id="mobileUserLabel" data-auth-user-label>Người dùng</span>
+          </summary>
+
+          <div data-auth="guest" class="mt-2 pl-3 space-y-1">
             <a href="user.html?tab=signup" class="block py-1">• Đăng ký</a>
             <a href="user.html?tab=signin" class="block py-1">• Đăng nhập</a>
+          </div>
+
+          <div data-auth="user" class="hidden mt-3 pl-3">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Tài khoản</p>
+              <p id="mobileAccountName" data-auth-name class="mt-1 text-sm font-semibold break-words">Chưa đăng nhập</p>
+              <p id="mobileAccountEmail" data-auth-email class="mt-1 text-xs text-slate-500 break-all">—</p>
+              <p class="mt-2 text-xs text-slate-500">Ngày tạo: <span id="mobileAccountCreatedAt" data-auth-created>—</span></p>
+            </div>
+            <div class="mt-2 space-y-1">
+              <button type="button" data-action="logout" class="block w-full text-left py-1 text-red-600">• Đăng xuất</button>
+              <button type="button" data-action="delete-account" class="block w-full text-left py-1">• Xóa tài khoản (làm sau)</button>
+            </div>
           </div>
         </details>
       </div>
@@ -125,8 +154,7 @@
     <section class="bg-gradient-to-b from-white to-slate-50">
       <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="flex flex-wrap items-end justify-center gap-4 text-center">
-          <h1 class="m-0 tracking-tight text-5xl md:text-7xl font-nunito font-semibold
-                     text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-emerald-500">
+          <h1 class="m-0 tracking-tight text-5xl md:text-7xl font-nunito font-semibold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-emerald-500">
             Medicate
           </h1>
           <p class="text-slate-600 text-base md:text-xl max-w-3xl">
@@ -141,10 +169,8 @@
       <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div class="relative">
-            <!-- viewport -->
             <div id="heroSlider" class="relative w-full h-[300px] sm:h-[460px] md:h-[620px] overflow-hidden bg-slate-100"></div>
 
-            <!-- arrows -->
             <button id="slidePrev" class="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 border hover:bg-white shadow" aria-label="Ảnh trước">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 19-7-7 7-7"/></svg>
             </button>
@@ -152,11 +178,9 @@
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 5 7 7-7 7"/></svg>
             </button>
 
-            <!-- dots -->
             <div id="slideDots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2"></div>
           </div>
 
-          <!-- CTA -->
           <div class="p-5 md:p-6 flex items-center justify-between gap-3 flex-wrap">
             <h2 class="text-lg font-semibold">Ảnh sản phẩm Medicate</h2>
             <div class="flex flex-wrap gap-2">
@@ -177,13 +201,8 @@
         </div>
 
         <div id="roadmap" class="relative rounded-2xl border border-slate-200 bg-white shadow-sm p-4 md:p-6 overflow-hidden">
-          <!-- SVG path nối các mốc -->
           <svg id="roadmapPath" class="absolute inset-0 pointer-events-none" width="100%" height="100%" preserveAspectRatio="none"></svg>
-
-          <!-- các mốc sẽ được JS render -->
-          <div id="roadmapSteps"
-               class="grid grid-cols-1 md:grid-cols-6 gap-4 md:gap-5">
-          </div>
+          <div id="roadmapSteps" class="grid grid-cols-1 md:grid-cols-6 gap-4 md:gap-5"></div>
         </div>
       </div>
     </section>
@@ -235,6 +254,5 @@
   <script src="assets/js/reminder-watcher.js"></script>
   <script src="assets/js/home.js"></script>
   <script src="assets/js/roadmap.js"></script>
-  
 </body>
 </html>
