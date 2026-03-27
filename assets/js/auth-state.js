@@ -26,37 +26,11 @@ const sb = window.medicateSupabase || window.supabase.createClient(SUPABASE_URL,
 
 window.medicateSupabase = sb;
 
-let bootPromise = null;
 let authSubscription = null;
 let profileCache = {
   userId: null,
   data: null
 };
-
-function setAllText(selectors, value) {
-  const list = Array.isArray(selectors) ? selectors : [selectors];
-  list.forEach((selector) => {
-    document.querySelectorAll(selector).forEach((el) => {
-      el.textContent = value;
-    });
-  });
-}
-
-function show(el) {
-  if (el) el.classList.remove('hidden');
-}
-
-function hide(el) {
-  if (el) el.classList.add('hidden');
-}
-
-function showAll(selector) {
-  document.querySelectorAll(selector).forEach(show);
-}
-
-function hideAll(selector) {
-  document.querySelectorAll(selector).forEach(hide);
-}
 
 function formatDate(value) {
   if (!value) return '—';
@@ -92,7 +66,11 @@ async function getProfile(userId, force = false) {
     return null;
   }
 
-  profileCache = { userId, data: data || null };
+  profileCache = {
+    userId,
+    data: data || null
+  };
+
   return data || null;
 }
 
@@ -115,15 +93,115 @@ function getCreatedAt(profile, session) {
   return formatDate(profile?.created_at || session?.user?.created_at);
 }
 
+function getDesktopContainer() {
+  return document.getElementById('userMenuDesktopContent');
+}
+
+function getMobileContainer() {
+  return document.getElementById('mobileUserMenuContent');
+}
+
+function setDesktopLabel(text) {
+  const el = document.getElementById('userMenuLabel');
+  if (el) el.textContent = text;
+}
+
+function setMobileLabel(text) {
+  const el = document.getElementById('mobileUserSummary');
+  if (el) el.textContent = text;
+}
+
+function renderGuestDesktop() {
+  const container = getDesktopContainer();
+  if (!container) return;
+
+  container.innerHTML = `
+    <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
+    <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
+  `;
+}
+
+function renderGuestMobile() {
+  const container = getMobileContainer();
+  if (!container) return;
+
+  container.innerHTML = `
+    <a href="user.html?tab=signup" class="block py-1">• Đăng ký</a>
+    <a href="user.html?tab=signin" class="block py-1">• Đăng nhập</a>
+  `;
+}
+
+function renderUserDesktop(displayName, email, createdAt) {
+  const container = getDesktopContainer();
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="px-2 py-1">
+      <div class="rounded-2xl border bg-white shadow-sm p-3">
+        <p class="text-xs text-slate-500">Tên người dùng</p>
+        <p class="mt-1 text-sm font-semibold break-words">${escapeHtml(displayName)}</p>
+
+        <p class="text-xs text-slate-500 mt-3">Email</p>
+        <p class="mt-1 text-xs break-all">${escapeHtml(email)}</p>
+
+        <p class="text-xs text-slate-500 mt-3">Ngày tạo</p>
+        <p class="mt-1 text-xs">${escapeHtml(createdAt)}</p>
+      </div>
+
+      <div class="mt-2 space-y-1">
+        <button type="button" data-action="logout" class="w-full text-left px-3 py-2 rounded-lg text-red-600 hover:bg-red-50">
+          Đăng xuất
+        </button>
+        <button type="button" data-action="delete-account" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">
+          Xóa tài khoản (làm sau)
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderUserMobile(displayName, email, createdAt) {
+  const container = getMobileContainer();
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="space-y-2">
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+        <p class="text-xs text-slate-500">Tên người dùng</p>
+        <p class="mt-1 text-sm font-semibold break-words">${escapeHtml(displayName)}</p>
+
+        <p class="text-xs text-slate-500 mt-3">Email</p>
+        <p class="mt-1 text-xs break-all">${escapeHtml(email)}</p>
+
+        <p class="text-xs text-slate-500 mt-3">Ngày tạo</p>
+        <p class="mt-1 text-xs">${escapeHtml(createdAt)}</p>
+      </div>
+
+      <button type="button" data-action="logout" class="block w-full text-left py-1 text-red-600">
+        • Đăng xuất
+      </button>
+      <button type="button" data-action="delete-account" class="block w-full text-left py-1">
+        • Xóa tài khoản (làm sau)
+      </button>
+    </div>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 function applyLoggedOutUI() {
-  showAll('[data-auth="guest"]');
-  hideAll('[data-auth="user"]');
-
-  setAllText(['[data-auth-user-label]', '#userMenuLabel', '#mobileUserSummary'], 'Người dùng');
-  setAllText(['[data-auth-name]', '#accountName', '#accountNameMobile'], 'Chưa đăng nhập');
-  setAllText(['[data-auth-email]', '#accountEmail', '#accountEmailMobile'], '—');
-  setAllText(['[data-auth-created]', '#accountCreatedAt', '#accountCreatedAtMobile'], '—');
-
+  setDesktopLabel('Người dùng');
+  setMobileLabel('Người dùng');
+  renderGuestDesktop();
+  renderGuestMobile();
+  bindActionButtons();
   document.body.dataset.authState = 'guest';
 }
 
@@ -132,14 +210,13 @@ function applyLoggedInUI(profile, session) {
   const email = getEmail(profile, session);
   const createdAt = getCreatedAt(profile, session);
 
-  hideAll('[data-auth="guest"]');
-  showAll('[data-auth="user"]');
+  setDesktopLabel(displayName);
+  setMobileLabel(displayName);
 
-  setAllText(['[data-auth-user-label]', '#userMenuLabel', '#mobileUserSummary'], displayName);
-  setAllText(['[data-auth-name]', '#accountName', '#accountNameMobile'], displayName);
-  setAllText(['[data-auth-email]', '#accountEmail', '#accountEmailMobile'], email);
-  setAllText(['[data-auth-created]', '#accountCreatedAt', '#accountCreatedAtMobile'], createdAt);
+  renderUserDesktop(displayName, email, createdAt);
+  renderUserMobile(displayName, email, createdAt);
 
+  bindActionButtons();
   document.body.dataset.authState = 'user';
 }
 
@@ -169,9 +246,7 @@ function urlHasAuthParams() {
 function cleanAuthParamsFromUrl() {
   const { url, hashParams, hasAuth, shouldStripSearchType, shouldStripHashType } = getAuthUrlState();
 
-  if (!hasAuth && !shouldStripSearchType && !shouldStripHashType) {
-    return;
-  }
+  if (!hasAuth && !shouldStripSearchType && !shouldStripHashType) return;
 
   let changed = false;
 
@@ -324,6 +399,11 @@ function bindDeletePlaceholders() {
   });
 }
 
+function bindActionButtons() {
+  bindLogoutButtons();
+  bindDeletePlaceholders();
+}
+
 function bindAuthListeners() {
   if (authSubscription) return;
 
@@ -334,6 +414,7 @@ function bindAuthListeners() {
       }
 
       const shouldForceProfile = event === 'SIGNED_IN' || event === 'USER_UPDATED';
+
       refreshAuthUI({
         session,
         forceProfile: shouldForceProfile
@@ -347,28 +428,13 @@ function bindAuthListeners() {
 }
 
 async function boot() {
-  if (bootPromise) return bootPromise;
+  bindActionButtons();
+  bindAuthListeners();
+  applyLoggedOutUI();
 
-  bootPromise = (async () => {
-    bindLogoutButtons();
-    bindDeletePlaceholders();
-    bindAuthListeners();
-    applyLoggedOutUI();
-
-    await tryHandleTokenHashRedirect();
-    await refreshAuthUI({ forceProfile: true });
-  })();
-
-  return bootPromise;
+  await tryHandleTokenHashRedirect();
+  await refreshAuthUI({ forceProfile: true });
 }
-
-window.medicateAuthState = {
-  supabase: sb,
-  refresh: (forceProfile = true) => refreshAuthUI({ forceProfile }),
-  signOut: signOutUser,
-  getSession: () => sb.auth.getSession(),
-  getCachedProfile: () => profileCache.data
-};
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
