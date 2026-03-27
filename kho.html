@@ -231,7 +231,7 @@
           <thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
             <tr>
               <th class="py-2.5 px-3 text-left font-medium">Tên thuốc gốc</th>
-              <th class="py-2.5 px-3 text-left font-medium">Alias</th>
+              <th class="py-2.5 px-3 text-left font-medium">Mã SP</th>
               <th class="py-2.5 px-3 text-right font-medium">Số lượng</th>
               <th class="py-2.5 px-3 text-left font-medium">HSD</th>
               <th class="py-2.5 px-3 text-left font-medium">Ngày nhập</th>
@@ -266,10 +266,6 @@
           <div>
             <label class="text-sm">Tên thuốc gốc <span class="text-rose-500">*</span></label>
             <input id="addTen" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="Ví dụ: Paracetamol"/>
-          </div>
-          <div>
-            <label class="text-sm">Alias</label>
-            <input id="addAlias" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="Tên khác, phân liều, hãng…"/>
           </div>
           <div class="grid grid-cols-3 gap-2">
             <div class="col-span-1">
@@ -471,10 +467,10 @@
         </div>
 
         <div>
-          <label class="block text-slate-700 mb-1">Alias</label>
-          <input id="editAlias" type="text"
+          <label class="block text-slate-700 mb-1">Mã SP / Barcode</label>
+          <input id="editBarcode" type="text"
                  class="w-full px-3 py-2 rounded-lg border border-slate-300"
-                 placeholder="Tên khác, phân liều, hãng… (tuỳ chọn)" />
+                 placeholder="Ví dụ: 893xxxxxxxxxx" />
         </div>
 
         <div class="grid grid-cols-3 gap-2">
@@ -615,7 +611,6 @@
     <!-- Barcode / scan -->
   <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
   <script src="https://unpkg.com/@ericblade/quagga2@2.0.0-beta.3/dist/quagga.js"></script>
-  <script src="assets/js/gm65-watcher.js"></script>
 
   <!-- khai báo URL backend Render cho barcode -->
   <script>
@@ -637,7 +632,7 @@
   <!-- Script kho + tra cứu thuốc -->
   <script src="assets/js/thuoc.js"></script>
   <script src="assets/js/transvi.js"></script>
-  <script src="assets/js/kho.js?v=20260312d"></script>
+  <script src="assets/js/kho.js?v=20260327-supa1"></script>
   <script>
     (function () {
       const tabKho   = document.getElementById('tabKho');
