@@ -104,16 +104,31 @@
 
           <!-- User -->
           <div class="relative" data-dd="user">
-            <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
-              Người dùng
+            <button id="userMenuToggle" type="button" class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false">
+              <span id="desktopUserLabel" data-auth-user-label>Người dùng</span>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/>
               </svg>
             </button>
             <div class="dd-menu absolute right-0 mt-3 hidden">
-              <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
-                <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
-                <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
+              <div class="w-72 rounded-2xl border bg-white shadow-xl overflow-hidden">
+                <div data-auth="guest" class="p-2 space-y-1">
+                  <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
+                  <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
+                </div>
+          
+                <div data-auth="user" class="hidden">
+                  <div class="px-4 py-3 border-b border-slate-200">
+                    <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Tài khoản</p>
+                    <p id="desktopAccountName" data-auth-name class="mt-1 text-sm font-semibold break-words">Chưa đăng nhập</p>
+                    <p id="desktopAccountEmail" data-auth-email class="mt-1 text-xs text-slate-500 break-all">—</p>
+                    <p class="mt-2 text-xs text-slate-500">Ngày tạo: <span id="desktopAccountCreatedAt" data-auth-created>—</span></p>
+                  </div>
+                  <div class="p-2 space-y-1">
+                    <button type="button" data-action="logout" class="w-full text-left px-3 py-2 rounded-lg text-red-600 hover:bg-red-50">Đăng xuất</button>
+                    <button type="button" data-action="delete-account" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Xóa tài khoản (làm sau)</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -138,7 +153,29 @@
         <a href="trangthai.html?view=now" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Trạng thái hiện tại</a>
         <a href="trangthai.html?view=history" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Lịch sử nhiệt/ẩm</a>
         <a href="mini-dashboard.html" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Mini dashboard</a>
-        <a href="user.html" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Người dùng</a>
+        <details id="mobileUserDetails" class="px-3 py-2 rounded-lg">
+          <summary class="cursor-pointer select-none">
+            <span id="mobileUserLabel" data-auth-user-label>Người dùng</span>
+          </summary>
+        
+          <div data-auth="guest" class="mt-2 pl-3 space-y-1">
+            <a href="user.html?tab=signup" class="block py-1">• Đăng ký</a>
+            <a href="user.html?tab=signin" class="block py-1">• Đăng nhập</a>
+          </div>
+        
+          <div data-auth="user" class="hidden mt-3 pl-3">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Tài khoản</p>
+              <p id="mobileAccountName" data-auth-name class="mt-1 text-sm font-semibold break-words">Chưa đăng nhập</p>
+              <p id="mobileAccountEmail" data-auth-email class="mt-1 text-xs text-slate-500 break-all">—</p>
+              <p class="mt-2 text-xs text-slate-500">Ngày tạo: <span id="mobileAccountCreatedAt" data-auth-created>—</span></p>
+            </div>
+            <div class="mt-2 space-y-1">
+              <button type="button" data-action="logout" class="block w-full text-left py-1 text-red-600">• Đăng xuất</button>
+              <button type="button" data-action="delete-account" class="block w-full text-left py-1">• Xóa tài khoản (làm sau)</button>
+            </div>
+          </div>
+        </details>
       </nav>
     </div>
   </header>
@@ -590,6 +627,9 @@
   <script src="assets/js/scan.js"></script>
 
   <!-- Script chung -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/auth-state.js?v=20260327-kho1"></script>
+  
   <script src="assets/js/nav.js"></script>
   <script src="assets/js/status-watcher.js"></script>
   <script src="assets/js/reminder-watcher.js"></script>
