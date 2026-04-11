@@ -6,10 +6,7 @@
   <title>Kho thuốc • Medicate</title>
   <link rel="icon" href="assets/img/favicon.png">
 
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Font + theme -->
   <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/theme.css" />
 
@@ -29,18 +26,14 @@
     input[type="range"].qty-range::-moz-range-thumb{
       width:18px;height:18px;border-radius:999px;background:#fff;border:2px solid #0284c7;cursor:pointer;
     }
-    .chat-bubble{max-width:85%;border-radius:16px;padding:10px 12px}
-    .chat-user{background:#e0f2fe;border:1px solid #bae6fd}
-    .chat-bot {background:#f8fafc;border:1px solid #e2e8f0}
     .mono{font-variant-numeric:tabular-nums}
-    .segmented>button{border:1px solid #cbd5e1}
-    .segmented>button:first-child{border-radius:999px 0 0 999px}
-    .segmented>button:last-child{border-radius:0 999px 999px 0;margin-left:-1px}
-    .segmented>button[aria-pressed="true"]{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
-    .segmented>button[disabled]{opacity:.5;cursor:not-allowed}
     .btn {transition: transform .05s ease}
     .btn:active {transform: translateY(1px)}
-    .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.4);display:flex;align-items:center;justify-content:center;z-index:50}
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(15,23,42,.4);
+      display:flex;align-items:center;justify-content:center;z-index:50;
+    }
+    .detail-grid textarea{min-height:92px}
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -57,7 +50,6 @@
         <nav class="hidden md:flex items-center gap-6">
           <a href="index.html" class="py-2 hover:text-sky-700">Trang chủ</a>
 
-          <!-- Dropdown THIẾT BỊ -->
           <div class="relative" data-dd="devices">
             <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
               Thiết bị
@@ -80,7 +72,6 @@
 
           <a href="kho.html" class="py-2 hover:text-sky-700">Kho thuốc</a>
 
-          <!-- Dropdown TRẠNG THÁI -->
           <div class="relative" data-dd="status">
             <button class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle">
               Trạng thái
@@ -90,19 +81,14 @@
             </button>
             <div class="dd-menu absolute left-0 mt-3 hidden">
               <div class="w-56 rounded-2xl border bg-white shadow-xl p-2">
-                <a href="trangthai.html?view=now" class="block px-3 py-2 rounded-lg hover:bg-slate-100">
-                  Hiện giờ
-                </a>
-                <a href="trangthai.html?view=history" class="block px-3 py-2 rounded-lg hover:bg-slate-100">
-                  Lịch sử
-                </a>
+                <a href="trangthai.html?view=now" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Hiện giờ</a>
+                <a href="trangthai.html?view=history" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Lịch sử</a>
               </div>
             </div>
           </div>
 
           <a href="mini-dashboard.html" class="py-2 hover:text-sky-700">Mini dashboard</a>
 
-          <!-- User -->
           <div class="relative" data-dd="user">
             <button id="userMenuToggle" type="button" class="py-2 hover:text-sky-700 flex items-center gap-1 dd-toggle" aria-expanded="false">
               <span id="desktopUserLabel" data-auth-user-label>Người dùng</span>
@@ -116,7 +102,7 @@
                   <a href="user.html?tab=signup" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng ký</a>
                   <a href="user.html?tab=signin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Đăng nhập</a>
                 </div>
-          
+
                 <div data-auth="user" class="hidden">
                   <div class="px-4 py-3 border-b border-slate-200">
                     <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Tài khoản</p>
@@ -134,7 +120,6 @@
           </div>
         </nav>
 
-        <!-- Nút mobile -->
         <button id="btnMobile" class="md:hidden inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-100">
           <span class="sr-only">Mở menu</span>
           <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
@@ -144,7 +129,6 @@
       </div>
     </div>
 
-    <!-- MENU MOBILE -->
     <div id="mobileMenu" class="md:hidden hidden border-t bg-white/95">
       <nav class="px-4 py-3 space-y-1">
         <a href="index.html" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100">Trang chủ</a>
@@ -157,12 +141,12 @@
           <summary class="cursor-pointer select-none">
             <span id="mobileUserLabel" data-auth-user-label>Người dùng</span>
           </summary>
-        
+
           <div data-auth="guest" class="mt-2 pl-3 space-y-1">
             <a href="user.html?tab=signup" class="block py-1">• Đăng ký</a>
             <a href="user.html?tab=signin" class="block py-1">• Đăng nhập</a>
           </div>
-        
+
           <div data-auth="user" class="hidden mt-3 pl-3">
             <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
               <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Tài khoản</p>
@@ -171,8 +155,8 @@
               <p class="mt-2 text-xs text-slate-500">Ngày tạo: <span id="mobileAccountCreatedAt" data-auth-created>—</span></p>
             </div>
             <div class="mt-2 space-y-1">
-              <button type="button" data-action="logout" class="block w-full text-left py-1 text-red-600">• Đăng xuất</button>
-              <button type="button" data-action="delete-account" class="block w-full text-left py-1">• Xóa tài khoản (làm sau)</button>
+              <button type="button" data-action="logout" class="block w-full text-left px-3 py-2 rounded-lg text-red-600 hover:bg-red-50">Đăng xuất</button>
+              <button type="button" data-action="delete-account" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100">Xóa tài khoản (làm sau)</button>
             </div>
           </div>
         </details>
@@ -181,204 +165,254 @@
   </header>
 
   <!-- MAIN -->
-  <main class="max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-6 py-6 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
-    <!-- LEFT: BẢNG KHO -->
-    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-4 border-b border-slate-200 flex flex-wrap items-center gap-3">
-        <div class="text-lg font-semibold">Kho thuốc</div>
+  <main class="max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-6 py-6 grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-6">
+    <!-- LEFT -->
+    <section class="space-y-6">
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-200 flex flex-wrap items-center gap-3">
+          <div class="text-lg font-semibold">Kho thuốc</div>
 
-        <!-- Slider SL -->
-        <div class="flex items-center gap-2 ml-2">
-          <span class="text-sm text-slate-600">SL ≤</span>
-          <input id="qtySlider" class="qty-range" type="range" min="0" max="10" value="10" step="1" />
-          <span id="qtyVal" class="text-sm font-medium mono">10</span>
+          <div class="flex items-center gap-2 ml-2">
+            <span class="text-sm text-slate-600">SL ≤</span>
+            <input id="qtySlider" class="qty-range" type="range" min="0" max="10" value="10" step="1" />
+            <span id="qtyVal" class="text-sm font-medium mono">10</span>
+          </div>
+
+          <div class="ml-auto w-full max-w-xs">
+            <input id="searchInput" type="search" placeholder="Tìm tên thuốc, barcode, ghi chú..."
+                   class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" />
+          </div>
         </div>
 
-        <div class="ml-auto w-full max-w-xs">
-          <input id="searchInput" type="search" placeholder="Tra cứu thông tin thuốc"
-                 class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" />
+        <div class="p-3 border-b border-slate-200 flex flex-wrap gap-2 items-center">
+          <button data-filter="all" class="filter-chip px-3 py-1.5 rounded-full border text-sm border-sky-300 hover:bg-sky-50">Tất cả</button>
+          <button data-filter="ok" class="filter-chip px-3 py-1.5 rounded-full border text-sm border-emerald-300 hover:bg-emerald-50">Còn hạn</button>
+          <button data-filter="soon" class="filter-chip px-3 py-1.5 rounded-full border text-sm border-amber-300 hover:bg-amber-50">Sắp hết hạn</button>
+          <button data-filter="expired" class="filter-chip px-3 py-1.5 rounded-full border text-sm border-rose-300 hover:bg-rose-50">Hết hạn</button>
+
+          <div class="ml-auto flex items-center gap-2">
+            <button id="btnBulkDelete" class="btn px-3 py-1.5 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 text-sm">
+              Xoá tất cả (đang lọc)
+            </button>
+            <button id="btnOpenTrash" class="btn px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm">
+              Thùng rác
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div class="p-3 border-b border-slate-200 flex flex-wrap gap-2 items-center">
-        <button data-filter="all"     class="filter-chip px-3 py-1.5 rounded-full border text-sm border-sky-300 hover:bg-sky-50">Tất cả</button>
-        <button data-filter="ok"      class="filter-chip px-3 py-1.5 rounded-full border text-sm border-emerald-300 hover:bg-emerald-50">Còn hạn</button>
-        <button data-filter="soon"    class="filter-chip px-3 py-1.5 rounded-full border text-sm border-amber-300 hover:bg-amber-50">Sắp hết hạn</button>
-        <button data-filter="expired" class="filter-chip px-3 py-1.5 rounded-full border text-sm border-rose-300 hover:bg-rose-50">Hết hạn</button>
-
-        <div class="ml-auto flex items-center gap-2">
-          <button id="btnBulkDelete" class="btn px-3 py-1.5 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 text-sm">
-            Xoá tất cả (đang lọc)
-          </button>
-          <button id="btnOpenTrash" class="btn px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm">
-            Thùng rác
-          </button>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-[13.5px] table-auto">
+            <colgroup>
+              <col style="width: 28%" />
+              <col style="width: 18%" />
+              <col style="width: 8%" />
+              <col style="width: 10%" />
+              <col style="width: 10%" />
+              <col style="width: 12%" />
+              <col style="width: 8%" />
+            </colgroup>
+            <thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-3 text-left font-medium">Thuốc</th>
+                <th class="py-2.5 px-3 text-left font-medium">Mã SP</th>
+                <th class="py-2.5 px-3 text-right font-medium">SL</th>
+                <th class="py-2.5 px-3 text-left font-medium">HSD</th>
+                <th class="py-2.5 px-3 text-left font-medium">Ngày nhập</th>
+                <th class="py-2.5 px-3 text-center font-medium">Trạng thái</th>
+                <th class="py-2.5 px-3 text-right font-medium">Còn<br>(ngày)</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
         </div>
-      </div>
-
-      <!-- TABLE -->
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-[13.5px] table-auto">
-          <colgroup>
-            <col style="width: 26%" />
-            <col style="width: 20%" />
-            <col style="width: 9%" />
-            <col style="width: 12%" />
-            <col style="width: 12%" />
-            <col style="width: 12%" />
-            <col style="width: 9%" />
-          </colgroup>
-          <thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
-            <tr>
-              <th class="py-2.5 px-3 text-left font-medium">Tên thuốc gốc</th>
-              <th class="py-2.5 px-3 text-left font-medium">Mã SP</th>
-              <th class="py-2.5 px-3 text-right font-medium">Số lượng</th>
-              <th class="py-2.5 px-3 text-left font-medium">HSD</th>
-              <th class="py-2.5 px-3 text-left font-medium">Ngày nhập</th>
-              <th class="py-2.5 px-3 text-center font-medium">Trạng thái</th>
-              <th class="py-2.5 px-3 text-right font-medium">Còn<br>(ngày)</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
-        </table>
-      </div>
+      </section>
     </section>
 
-    <!-- RIGHT: FORM + CATALOG + REMINDERS + CHAT -->
-    <aside class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 h-fit sticky top-20">
-      <!-- ADD (manual) -->
-      <div class="mb-4">
-        <div class="text-base font-semibold mb-2">Thêm thuốc</div>
+    <!-- RIGHT -->
+    <aside class="space-y-6">
+      <!-- ADD -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        <div class="text-base font-semibold mb-3">Thêm thuốc</div>
 
-        <!-- Mã vạch / QR + scan -->
         <div class="mb-3">
           <label class="text-sm">Mã vạch / QR</label>
           <div class="flex gap-2">
-            <input id="addBarcode" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"
+            <input id="addBarcode"
+                   class="flex-1 px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"
                    placeholder="Ví dụ: 893xxxxxxxxxx" inputmode="numeric" />
             <button id="btnResolveBarcode" class="btn px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">Tra mã → Tên</button>
-            <button id="btnScanCam" class="btn px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Quét bằng camera</button>
+            <button id="btnScanCam" class="btn px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Quét camera</button>
           </div>
           <div id="barcodeMsg" class="text-xs text-slate-500 mt-1"></div>
         </div>
 
         <form id="formAddDrug" class="space-y-2">
           <div>
-            <label class="text-sm">Tên thuốc gốc <span class="text-rose-500">*</span></label>
-            <input id="addTen" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="Ví dụ: Paracetamol"/>
+            <label class="text-sm">Tên thuốc <span class="text-rose-500">*</span></label>
+            <input id="addTen" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"
+                   placeholder="Ví dụ: Paracetamol" />
           </div>
+
           <div class="grid grid-cols-3 gap-2">
-            <div class="col-span-1">
+            <div>
               <label class="text-sm">Số lượng</label>
-              <input id="addSL" type="number" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="0"/>
+              <input id="addSL" type="number" min="0"
+                     class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"
+                     placeholder="0" />
             </div>
             <div>
               <label class="text-sm">HSD</label>
-              <input id="addHSD" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="DD/MM/YYYY"/>
+              <input id="addHSD"
+                     class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"
+                     placeholder="DD/MM/YYYY" />
             </div>
             <div>
               <label class="text-sm">Ngày nhập</label>
-              <input id="addNgayNhap" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200" placeholder="DD/MM/YYYY"/>
+              <input id="addNgayNhap"
+                     class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring focus:ring-sky-200"
+                     placeholder="DD/MM/YYYY" />
             </div>
           </div>
+
           <div class="flex items-center gap-2 pt-1">
             <button type="submit" class="btn px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Thêm</button>
             <button id="btnClearAdd" type="button" class="btn px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">Xoá form</button>
             <span id="addMsg" class="text-xs text-slate-600 ml-auto"></span>
           </div>
         </form>
-      </div>
+      </section>
 
-      <!-- Catalog -->
-      <div class="text-base font-semibold mb-2">Danh mục thuốc nội phổ biến</div>
-      <div class="flex items-center gap-2 mb-3">
-        <button id="btnToggleMissing" class="btn px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">Xem mục thiếu</button>
-        <span id="coverageBadge" class="ml-auto text-xs px-2 py-1 rounded-full bg-slate-100">Coverage: …</span>
-      </div>
-      <div id="catalogList" class="max-h-[28vh] overflow-auto space-y-1 text-sm"></div>
-      <hr class="my-4">
-
-      <!-- Global reminders -->
-      <div id="globalRemindersBox" class="mt-3">
-        <div class="flex items-center gap-2 mb-2">
+      <!-- REMINDERS -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center gap-2 mb-3">
           <div class="text-base font-semibold">Thuốc đang được nhắc</div>
           <button id="btnReloadGlobalReminders"
                   class="btn px-2 py-1 rounded-full border border-slate-300 text-xs hover:bg-slate-50">
             Làm mới
           </button>
         </div>
-        <div id="globalRemindersList"
-            class="text-xs space-y-1 max-h-[18vh] overflow-auto"></div>
-      </div>
-      <hr class="my-4">
-
-      <!-- Chatbot switch (UI, tạm chưa dùng logic AI) -->
-      <div class="flex items-center justify-between">
-        <div class="text-base font-semibold">Trợ lý</div>
-        <div class="segmented inline-flex rounded-full overflow-hidden">
-          <button id="tabKho"  type="button" class="px-3 py-1.5 text-sm" aria-pressed="true">Tủ thuốc</button>
-          <button id="tabThuoc" type="button" class="px-3 py-1.5 text-sm" aria-pressed="false">Tra cứu thuốc</button>
+        <div id="globalRemindersBox">
+          <div id="globalRemindersList" class="text-xs space-y-1 max-h-[18vh] overflow-auto"></div>
         </div>
-      </div>
+      </section>
 
-      <!-- Chatbot: Hỏi kho (UI) -->
-<div id="chatKho" class="mt-3 space-y-3">
-  <div class="text-sm text-slate-600">
-    Hỏi nhanh về kho thuốc: số lượng, hạn dùng, thuốc sắp hết hạn...
-  </div>
-
-  <!-- danh sách câu hỏi/ trả lời -->
-  <div id="chatList"
-       class="text-sm space-y-2 max-h-[220px] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-    <div class="text-xs text-slate-500">
-      Gõ câu hỏi vào ô bên dưới hoặc bấm một gợi ý có sẵn.
-    </div>
-  </div>
-
-  <!-- ô nhập + nút gửi -->
-  <div class="flex items-start gap-2">
-    <textarea id="chatInput"
-              rows="2"
-              class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm resize-none focus:outline-none focus:ring focus:ring-sky-200"
-              placeholder="Ví dụ: Thuốc nào sắp hết hạn trong 30 ngày tới?"></textarea>
-    <button id="btnSend"
-            type="button"
-            class="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm">
-      Hỏi
-    </button>
-  </div>
-
-  <!-- chip gợi ý -->
-  <div class="flex flex-wrap gap-2 text-xs">
-    <button id="chipSHH30"
-            type="button"
-            class="chip-q px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100"
-            data-q="Thuốc nào sắp hết hạn trong 30 ngày tới?">
-      SHH 30 ngày
-    </button>
-    <button id="chipRandOne"
-            type="button"
-            class="chip-q px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100">
-      Tên ngẫu nhiên: SL, HSD
-    </button>
-    <button id="chipRandPair"
-            type="button"
-            class="chip-q px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100">
-      2 tên ngẫu nhiên: tổng SL
-    </button>
-  </div>
-</div>
-
-
-      <div id="chatThuoc" class="hidden mt-3">
-        <div class="text-sm text-slate-600">
-          Tab tra cứu thuốc sẽ dùng để hiển thị các thông tin dược (sau này).
+      <!-- DRUG LOOKUP -->
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-base font-semibold">Tra cứu thuốc</div>
         </div>
+
+        <!-- giữ ID để thuoc.js vẫn hoạt động -->
+        <div class="hidden">
+          <button id="tabKho" type="button" aria-pressed="false"></button>
+          <button id="tabThuoc" type="button" aria-pressed="true"></button>
+          <div id="chatKho" class="hidden"></div>
+        </div>
+
+        <div id="chatThuoc" class="mt-1"></div>
+      </section>
+
+      <!-- hidden placeholders để kho.js cũ không lỗi trước khi mình gửi file JS -->
+      <div class="hidden">
+        <button id="btnToggleMissing" type="button"></button>
+        <span id="coverageBadge"></span>
+        <div id="catalogList"></div>
       </div>
     </aside>
   </main>
 
-  <!-- REMINDER MODAL (nhiều giờ uống) -->
+  <!-- DETAIL MODAL -->
+  <div id="detailModal" class="hidden modal-backdrop">
+    <div class="bg-white w-[min(960px,96vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
+      <div class="flex items-center gap-3 mb-4">
+        <div>
+          <div class="text-lg font-semibold">Chi tiết thuốc</div>
+          <div class="text-xs text-slate-500">Thông tin cơ bản + thông tin quét từ bao bì</div>
+        </div>
+        <button id="btnCloseDetail"
+                class="btn ml-auto px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50 text-sm">
+          Đóng
+        </button>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <div class="text-xs text-slate-500">Tên thuốc</div>
+            <div id="detailDrugName" class="mt-1 font-semibold break-words">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <div class="text-xs text-slate-500">Barcode</div>
+            <div id="detailBarcode" class="mt-1 font-semibold break-all mono">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <div class="text-xs text-slate-500">HSD</div>
+            <div id="detailExpiry" class="mt-1 font-semibold">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <div class="text-xs text-slate-500">NSX</div>
+            <div id="detailMfg" class="mt-1 font-semibold">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <div class="text-xs text-slate-500">Số lô</div>
+            <div id="detailLot" class="mt-1 font-semibold mono">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <div class="text-xs text-slate-500">Số lượng</div>
+            <div id="detailQuantity" class="mt-1 font-semibold mono">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <div class="text-xs text-slate-500">Ngày nhập</div>
+            <div id="detailImportedAt" class="mt-1 font-semibold">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <div class="text-xs text-slate-500">Trạng thái</div>
+            <div id="detailStatus" class="mt-1 font-semibold">—</div>
+          </div>
+        </div>
+
+        <div class="detail-grid grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 mb-1 font-medium">Thành phần / hoạt chất</label>
+            <textarea id="detailComposition" readonly
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50"></textarea>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1 font-medium">Nguồn gốc / NSX / đăng ký / xuất xứ</label>
+            <textarea id="detailSourceText" readonly
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50"></textarea>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1 font-medium">Công dụng / cách dùng</label>
+            <textarea id="detailUsageText" readonly
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50"></textarea>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1 font-medium">Chống chỉ định / lưu ý</label>
+            <textarea id="detailCautionText" readonly
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50"></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-slate-700 mb-1 font-medium">Bảo quản</label>
+            <textarea id="detailStorageText" readonly
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50"></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-slate-700 mb-1 font-medium">Ghi chú</label>
+            <textarea id="detailNote" readonly
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50"></textarea>
+          </div>
+        </div>
+
+        <details class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <summary class="cursor-pointer font-medium">Các mặt hộp đã quét</summary>
+          <div id="detailPanelScans" class="mt-3 space-y-2 text-xs"></div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMINDER MODAL -->
   <div id="reminderModal" class="hidden modal-backdrop">
     <div class="bg-white w-[min(480px,92vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
       <div class="flex items-center gap-3 mb-3">
@@ -449,31 +483,36 @@
 
   <!-- EDIT DRUG MODAL -->
   <div id="editModal" class="hidden modal-backdrop">
-    <div class="bg-white w-[min(480px,92vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="text-lg font-semibold">Sửa thông tin thuốc</div>
+    <div class="bg-white w-[min(920px,96vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
+      <div class="flex items-center gap-3 mb-4">
+        <div>
+          <div class="text-lg font-semibold">Sửa thông tin thuốc</div>
+          <div class="text-xs text-slate-500">Sửa thông tin cơ bản và thông tin chi tiết đã quét</div>
+        </div>
         <button id="btnCloseEdit"
                 class="btn ml-auto px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50 text-sm">
           Đóng
         </button>
       </div>
 
-      <div class="space-y-3 text-sm">
-        <div>
-          <label class="block text-slate-700 mb-1">Thuốc</label>
-          <input id="editDrugName" type="text"
-                 class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50"
-                 readonly />
+      <div class="space-y-4 text-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 mb-1">Tên thuốc</label>
+            <input id="editDrugName" type="text"
+                   class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                   placeholder="Tên thuốc" />
+          </div>
+
+          <div>
+            <label class="block text-slate-700 mb-1">Mã SP / Barcode</label>
+            <input id="editBarcode" type="text"
+                   class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                   placeholder="Ví dụ: 893xxxxxxxxxx" />
+          </div>
         </div>
 
-        <div>
-          <label class="block text-slate-700 mb-1">Mã SP / Barcode</label>
-          <input id="editBarcode" type="text"
-                 class="w-full px-3 py-2 rounded-lg border border-slate-300"
-                 placeholder="Ví dụ: 893xxxxxxxxxx" />
-        </div>
-
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
           <div>
             <label class="block text-slate-700 mb-1">Số lượng</label>
             <input id="editSL" type="number" min="0"
@@ -487,10 +526,61 @@
                    placeholder="DD/MM/YYYY" />
           </div>
           <div>
+            <label class="block text-slate-700 mb-1">NSX</label>
+            <input id="editMFG" type="text"
+                   class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                   placeholder="DD/MM/YYYY" />
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1">Số lô</label>
+            <input id="editLot" type="text"
+                   class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                   placeholder="LSX / LOT" />
+          </div>
+          <div>
             <label class="block text-slate-700 mb-1">Ngày nhập</label>
             <input id="editNgayNhap" type="text"
                    class="w-full px-3 py-2 rounded-lg border border-slate-300"
                    placeholder="DD/MM/YYYY" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 mb-1">Thành phần / hoạt chất</label>
+            <textarea id="editComposition"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                      placeholder="Thành phần / hoạt chất / dạng bào chế"></textarea>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1">Nguồn gốc / NSX / đăng ký / xuất xứ</label>
+            <textarea id="editSourceText"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                      placeholder="Nguồn gốc / NSX / xuất xứ / số đăng ký"></textarea>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1">Công dụng / cách dùng</label>
+            <textarea id="editUsageText"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                      placeholder="Công dụng / liều dùng / cách dùng"></textarea>
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1">Chống chỉ định / lưu ý</label>
+            <textarea id="editCautionText"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                      placeholder="Chống chỉ định / cảnh báo / lưu ý / dị ứng"></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-slate-700 mb-1">Bảo quản</label>
+            <textarea id="editStorageText"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                      placeholder="Bảo quản"></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-slate-700 mb-1">Ghi chú</label>
+            <textarea id="editNote"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-300"
+                      placeholder="Ghi chú"></textarea>
           </div>
         </div>
 
@@ -505,7 +595,7 @@
     </div>
   </div>
 
-  <!-- TRASH MODAL (stub) -->
+  <!-- TRASH MODAL -->
   <div id="trashModal" class="hidden modal-backdrop">
     <div class="bg-white w-[min(900px,92vw)] rounded-2xl shadow-2xl border border-slate-200 p-4">
       <div class="flex items-center gap-3 mb-3">
@@ -550,7 +640,7 @@
           <video id="scanVideo" playsinline muted class="w-full h-[48vh] object-contain bg-black"></video>
         </div>
         <div class="space-y-2">
-          <div class="text-sm text-slate-600">Đưa mã lại gần trong khung hình. Hỗ trợ 1D (EAN/UPC/Code128…) & 2D (QR).</div>
+          <div class="text-sm text-slate-600">Đưa mã lại gần trong khung hình. Hỗ trợ 1D và 2D.</div>
           <div class="p-2 rounded-lg bg-slate-50 border text-sm">
             <div><b>Mã nhận:</b> <span id="scanResult" class="mono"></span></div>
             <div class="text-xs text-slate-500 mt-1">Sẽ tự điền vào “Mã vạch/QR” và gọi tra cứu.</div>
@@ -602,65 +692,42 @@
     </div>
   </footer>
 
-  <!-- Libs dùng chung -->
+  <!-- Libs -->
   <script src="https://unpkg.com/dayjs/dayjs.min.js"></script>
   <script src="https://unpkg.com/dayjs/plugin/customParseFormat.js"></script>
   <script>dayjs.extend(window.dayjs_plugin_customParseFormat);</script>
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
-    <!-- Barcode / scan -->
   <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
   <script src="https://unpkg.com/@ericblade/quagga2@2.0.0-beta.3/dist/quagga.js"></script>
 
-  <!-- khai báo URL backend Render cho barcode -->
   <script>
     window.MEDICATE_API_BASE = 'https://medicate-barcode.onrender.com';
   </script>
 
-  <!-- client barcode sử dụng backend -->
   <script src="assets/js/barcode.js"></script>
   <script src="assets/js/scan.js"></script>
 
-  <!-- Script chung -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/auth-state.js?v=20260327-kho1"></script>
-  
+
   <script src="assets/js/nav.js"></script>
   <script src="assets/js/status-watcher.js"></script>
   <script src="assets/js/reminder-watcher.js"></script>
 
-  <!-- Script kho + tra cứu thuốc -->
   <script src="assets/js/thuoc.js"></script>
   <script src="assets/js/transvi.js"></script>
-  <script src="assets/js/kho.js?v=20260327-supa1"></script>
+  <script src="assets/js/kho.js?v=20260411-step2-html"></script>
+
   <script>
-    (function () {
-      const tabKho   = document.getElementById('tabKho');
-      const tabThuoc = document.getElementById('tabThuoc');
-      const chatKho  = document.getElementById('chatKho');
-      const chatThuoc= document.getElementById('chatThuoc');
-
-      function activate(which){
-        const isKho = which === 'kho';
-        tabKho.setAttribute('aria-pressed', String(isKho));
-        tabThuoc.setAttribute('aria-pressed', String(!isKho));
-        chatKho.classList.toggle('hidden', !isKho);
-        chatThuoc.classList.toggle('hidden', isKho);
+    window.selectStatus = function(mode){
+      const btn = document.querySelector(`.filter-chip[data-filter="${mode}"]`)
+             || document.querySelector('.filter-chip[data-filter="all"]');
+      if(btn){
+        btn.click();
+        document.getElementById('tableBody')?.scrollIntoView({behavior:'smooth', block:'start'});
       }
-      tabKho?.addEventListener('click',   () => activate('kho'));
-      tabThuoc?.addEventListener('click', () => activate('thuoc'));
-      activate('kho');
-
-      // Helper để trang khác gọi filter nhanh
-      window.selectStatus = function(mode){
-        const btn = document.querySelector(`.filter-chip[data-filter="${mode}"]`)
-                 || document.querySelector(`.filter-chip[data-filter="all"]`);
-        if(btn){
-          btn.click();
-          document.getElementById('tableBody')?.scrollIntoView({behavior:'smooth', block:'start'});
-        }
-      };
-    })();
+    };
   </script>
 </body>
 </html>
