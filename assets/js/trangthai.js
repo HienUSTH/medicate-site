@@ -1,158 +1,190 @@
-// assets/js/trangthai.js
 (function () {
-  // ===== CONFIG: Google Sheet =====
-  const SPREADSHEET_ID = '1IT1mUdsHpvX3QdSt0XMtVhH8NCfI_hCAWF3Xbxiv_pM'; // sheet của bạn
-  const LOG_SHEET_NAME = 'Sheet1';
+  const SUPABASE_URL = 'https://kbdqkvcmfkuthlbbnaac.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZHFrdmNtZmt1dGhsYmJuYWFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0OTczNzIsImV4cCI6MjA5MDA3MzM3Mn0.8dDVYCZyvTYRR7pkeleTiW1vv9ktNiPD8dml0DU4HDw';
 
-  // ===== Ngưỡng (giống Apps Script) =====
-  const TEMP_LOW = 15, TEMP_WARN = 30, TEMP_CRIT = 35;
-  const HUM_WARN = 60, HUM_CRIT = 70;
+  const REFRESH_MS = 15000;
 
-  // ===== Biến global =====
-  let gRows = [];        // tất cả log (đã parse + gắn band)
-  let gLatestKey = null; // yyyyMMdd ngày mới nhất
-  let gPrevKey = null;   // yyyyMMdd ngày liền trước
-  let gNowRows = [];     // tối đa 20 điểm mới nhất của ngày hiện tại
-  let gHistoryRows = []; // toàn bộ ngày trước hôm nay
+  let sb = null;
+  let refreshTimer = null;
 
-  // ===== Label band =====
-  function tempLabel(t) {
-    if (t == null || t === '') return '';
-    if (t >= TEMP_CRIT) return '🔥 ≥35° (quá nóng)';
-    if (t >= TEMP_WARN) return '⚠️ 30–34.9° (cảnh báo)';
-    if (t < TEMP_LOW)   return '❄️ <15° (quá lạnh)';
-    return '✅ 15–29.9° (ổn định)';
-  }
-  function humLabel(h) {
-    if (h == null || h === '') return '';
-    if (h >= HUM_CRIT) return '💧 ≥70% (quá ẩm, nguy cơ nấm mốc)';
-    if (h >= HUM_WARN) return '⚠️ 60–69.9% (cảnh báo)';
-    return '✅ ≤60% (ổn định)';
-  }
+  const state = {
+    user: null,
+    latest: null,
+    nowRows: [],
+    historyRows: [],
+    historyDate: null
+  };
 
-  function toNumber(x) {
-    if (x == null || x === '') return null;
-    if (typeof x === 'number') return x;
-    if (typeof x === 'string') {
-      const s = x.replace(',', '.').trim();
-      const n = parseFloat(s);
-      return Number.isNaN(n) ? null : n;
+  function getClient() {
+    if (!window.supabase) {
+      throw new Error('Supabase chưa sẵn sàng.');
     }
-    return null;
+    if (!sb) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      });
+    }
+    return sb;
   }
 
-  // ===== GViz đọc Sheet1 =====
-  async function fetchLogRows() {
-    const base = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq`;
-    const url  = `${base}?tqx=out:json&sheet=${encodeURIComponent(LOG_SHEET_NAME)}`;
+  function formatNumber(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '—';
+    return n.toFixed(1);
+  }
 
-    const res = await fetch(url);
-    const txt = await res.text();
+  function formatDateTime(value) {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '—';
+    return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).format(d);
+  }
 
-    const m = txt.match(/\{.*\}/s);
-    if (!m) throw new Error('Không parse được JSON từ GViz');
-    const json = JSON.parse(m[0]);
+  function formatDateOnly(ymd) {
+    if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd || '—';
+    const [y, m, d] = ymd.split('-');
+    return `${d}/${m}/${y}`;
+  }
 
-    const rows = json.table?.rows || [];
-    const out  = [];
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
 
-    for (const r of rows) {
-      const cells = r.c || [];
-      const cTime = cells[0] || {};
-      const cTemp = cells[1] || {};
-      const cHum  = cells[2] || {};
+  function setError(message) {
+    const box = document.getElementById('statusError');
+    if (!box) return;
+    box.textContent = message;
+    box.classList.remove('hidden');
+  }
 
-      const ts  = parseGVizDate(cTime);
-      const tsDisplay = cTime.f || (cTime.v ?? '');
-      const temp = toNumber(cTemp.v);
-      const hum  = toNumber(cHum.v);
+  function clearError() {
+    const box = document.getElementById('statusError');
+    if (!box) return;
+    box.textContent = '';
+    box.classList.add('hidden');
+  }
 
-      if (!ts || temp == null || hum == null) continue;
+  function buildPastDateOptions(days = 14) {
+    const out = [];
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
 
-      const tBand = tempLabel(temp);
-      const hBand = humLabel(hum);
-      const key   = keyOf(ts); // yyyyMMdd
-
-      out.push({ ts, tsDisplay, temp, hum, tempBand: tBand, humBand: hBand, key });
+    for (let i = 1; i <= days; i += 1) {
+      const d = new Date(base);
+      d.setDate(base.getDate() - i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      out.push({
+        value: `${y}-${m}-${day}`,
+        label: `${day}/${m}/${y}`
+      });
     }
     return out;
   }
 
-  function parseGVizDate(cell) {
-    if (!cell) return null;
-    const v = cell.v;
-
-    if (typeof v === 'string' && /^Date\(/.test(v)) {
-      const nums = v.match(/\d+/g);
-      if (!nums) return null;
-      const [y, m, d, hh = 0, mm = 0, ss = 0] = nums.map(Number);
-      return new Date(y, m, d, hh, mm, ss);
-    }
-
-    if (v instanceof Date) return v;
-    if (typeof v === 'number') {
-      const ms = Math.round((v - 25569) * 86400 * 1000);
-      return new Date(ms);
-    }
-    if (typeof v === 'string') {
-      const s = v.trim();
-      const hasZ = /Z$/i.test(s);
-      let d = new Date(s);
-      if (Number.isNaN(d.getTime())) return null;
-      if (hasZ) d = new Date(d.getTime() + 7 * 3600 * 1000); // UTC->VN(+7)
-      return d;
-    }
-    return null;
+  function buildUtcRangeForLocalDate(ymd) {
+    const start = new Date(`${ymd}T00:00:00+07:00`);
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    return {
+      startIso: start.toISOString(),
+      endIso: end.toISOString()
+    };
   }
 
-  function keyOf(date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}${m}${d}`;
-  }
-  function keyToDisplay(key) {
-    if (!key || key.length !== 8) return key || '';
-    return `${key.slice(0,4)}-${key.slice(4,6)}-${key.slice(6)}`;
-  }
-
-  function getLatestAndPrevKeys(rows) {
-    const keys = Array.from(new Set(rows.map(r => r.key))).sort();
-    const latestKey = keys.length ? keys[keys.length - 1] : null;
-    const prevKey   = keys.length > 1 ? keys[keys.length - 2] : null;
-    return { latestKey, prevKey, allKeys: keys };
-  }
-
-  function overallState(temp, hum) {
-    if (temp == null && hum == null) return 'unknown';
-    if ((temp != null && temp >= TEMP_CRIT) || (hum != null && hum >= HUM_CRIT)) return 'danger';
-    if ((temp != null && temp >= TEMP_WARN) || (hum != null && hum >= HUM_WARN)) return 'warn';
-    return 'ok';
-  }
-
-  function applyOverallBadge(level) {
+  function setOverallBadge(level, text) {
     const el = document.getElementById('nowOverallBadge');
     if (!el) return;
+
     el.className = 'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium';
 
     if (level === 'danger') {
       el.classList.add('border-rose-200', 'bg-rose-50', 'text-rose-700');
-      el.textContent = 'Nguy hiểm';
-    } else if (level === 'warn') {
-      el.classList.add('border-amber-200', 'bg-amber-50', 'text-amber-700');
-      el.textContent = 'Cần chú ý';
-    } else if (level === 'ok') {
-      el.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
-      el.textContent = 'Ổn định';
-    } else {
-      el.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-600');
-      el.textContent = 'Không rõ';
+      el.textContent = text || 'Cảnh báo';
+      return;
     }
+    if (level === 'warning') {
+      el.classList.add('border-amber-200', 'bg-amber-50', 'text-amber-700');
+      el.textContent = text || 'Cần chú ý';
+      return;
+    }
+    if (level === 'safe') {
+      el.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
+      el.textContent = text || 'An toàn';
+      return;
+    }
+    if (level === 'offline') {
+      el.classList.add('border-slate-200', 'bg-slate-100', 'text-slate-700');
+      el.textContent = text || 'Mất kết nối';
+      return;
+    }
+
+    el.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-600');
+    el.textContent = text || 'Chưa có dữ liệu';
   }
 
-  function fmtNumber(v) {
-    if (v == null || Number.isNaN(v)) return '—';
-    return v.toFixed(1);
+  function renderLatestStatus() {
+    const row = state.latest;
+
+    const cabinetNameEl = document.getElementById('nowCabinetName');
+    const timestampEl = document.getElementById('nowTimestamp');
+    const tempEl = document.getElementById('nowTemp');
+    const humEl = document.getElementById('nowHum');
+    const tempBandEl = document.getElementById('nowTempBand');
+    const humBandEl = document.getElementById('nowHumBand');
+    const noteEl = document.getElementById('nowFreshnessNote');
+
+    if (!row) {
+      if (cabinetNameEl) cabinetNameEl.textContent = '—';
+      if (timestampEl) timestampEl.textContent = '—';
+      if (tempEl) tempEl.textContent = '—';
+      if (humEl) humEl.textContent = '—';
+      if (tempBandEl) tempBandEl.textContent = '—';
+      if (humBandEl) humBandEl.textContent = '—';
+      if (noteEl) noteEl.textContent = 'Chưa có dữ liệu cảm biến.';
+      setOverallBadge('unknown', 'Chưa có dữ liệu');
+      return;
+    }
+
+    if (cabinetNameEl) cabinetNameEl.textContent = row.cabinet_name || 'Tủ thuốc';
+    if (timestampEl) timestampEl.textContent = formatDateTime(row.recorded_at);
+    if (tempEl) tempEl.textContent = `${formatNumber(row.temperature)} °C`;
+    if (humEl) humEl.textContent = `${formatNumber(row.humidity)} %`;
+    if (tempBandEl) tempBandEl.textContent = row.temp_band_label || '—';
+    if (humBandEl) humBandEl.textContent = row.humidity_band_label || '—';
+
+    if (row.device_online === false) {
+      setOverallBadge('offline', 'Mất kết nối');
+      if (noteEl) noteEl.textContent = 'Pi đang offline, trang web đang giữ lại mẫu đo gần nhất.';
+      return;
+    }
+
+    if (!row.recent_24h) {
+      setOverallBadge('offline', 'Dữ liệu cũ');
+      if (noteEl) noteEl.textContent = 'Chưa có mẫu mới trong 24 giờ gần nhất. Đây là dữ liệu cuối cùng còn lưu.';
+      return;
+    }
+
+    setOverallBadge(row.alert_level_key || 'unknown', row.alert_level_label || 'Chưa rõ');
+    if (noteEl) noteEl.textContent = 'Dữ liệu đang tự động cập nhật từ Pi qua Supabase.';
   }
 
   function renderTable(tbodyId, rows) {
@@ -160,43 +192,180 @@
     if (!tbody) return;
 
     if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-slate-400">Không có dữ liệu.</td></tr>`;
+      tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-slate-400">Không có dữ liệu.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = rows.map((r, idx) => {
-      const rowCls = idx % 2 ? 'bg-slate-50/50' : 'bg-white';
+    tbody.innerHTML = rows.map((row, index) => {
+      const rowCls = index % 2 ? 'bg-slate-50/50' : 'bg-white';
       return `
         <tr class="${rowCls}">
-          <td class="px-4 py-1.5 whitespace-nowrap text-xs md:text-sm">${r.tsDisplay}</td>
-          <td class="px-4 py-1.5 text-right">${fmtNumber(r.temp)}</td>
-          <td class="px-4 py-1.5 text-xs">${r.tempBand}</td>
-          <td class="px-4 py-1.5 text-right">${fmtNumber(r.hum)}</td>
-          <td class="px-4 py-1.5 text-xs">${r.humBand}</td>
-        </tr>`;
+          <td class="px-4 py-1.5 whitespace-nowrap text-xs md:text-sm">${escapeHtml(formatDateTime(row.recorded_at))}</td>
+          <td class="px-4 py-1.5 text-right">${escapeHtml(formatNumber(row.temperature))}</td>
+          <td class="px-4 py-1.5 text-xs">${escapeHtml(row.temp_band_label || '—')}</td>
+          <td class="px-4 py-1.5 text-right">${escapeHtml(formatNumber(row.humidity))}</td>
+          <td class="px-4 py-1.5 text-xs">${escapeHtml(row.humidity_band_label || '—')}</td>
+        </tr>
+      `;
     }).join('');
   }
 
-  // ==== Helpers filter band ====
   function matchTempBand(row, mode) {
     if (!mode) return true;
-    const band = row.tempBand || '';
-    if (mode === 'cold') return band.includes('❄️');
-    if (mode === 'ok')   return band.includes('✅');
-    if (mode === 'warn') return band.includes('⚠️');
-    if (mode === 'hot')  return band.includes('🔥');
-    return true;
-  }
-  function matchHumBand(row, mode) {
-    if (!mode) return true;
-    const band = row.humBand || '';
-    if (mode === 'ok')   return band.includes('✅');
-    if (mode === 'warn') return band.includes('⚠️');
-    if (mode === 'wet')  return band.includes('💧');
+    const key = row.temp_band_key || '';
+    if (mode === 'cold') return key === 'low';
+    if (mode === 'ok') return key === 'stable';
+    if (mode === 'warn') return key === 'warning';
+    if (mode === 'hot') return key === 'danger';
     return true;
   }
 
-  // ==== Switch view (Hiện giờ / Lịch sử) ====
+  function matchHumBand(row, mode) {
+    if (!mode) return true;
+    const key = row.humidity_band_key || '';
+    if (mode === 'dry') return key === 'dry';
+    if (mode === 'ok') return key === 'stable';
+    if (mode === 'warn') return key === 'warning';
+    if (mode === 'wet') return key === 'danger';
+    return true;
+  }
+
+  function applyNowFilters() {
+    const tempMode = document.getElementById('nowTempBandSelect')?.value || '';
+    const humMode = document.getElementById('nowHumBandSelect')?.value || '';
+    const query = (document.getElementById('nowSearch')?.value || '').trim().toLowerCase();
+
+    let rows = state.nowRows.slice();
+
+    rows = rows.filter((row) => matchTempBand(row, tempMode) && matchHumBand(row, humMode));
+
+    if (query) {
+      rows = rows.filter((row) => {
+        const time = formatDateTime(row.recorded_at).toLowerCase();
+        const temp = formatNumber(row.temperature);
+        const hum = formatNumber(row.humidity);
+        return time.includes(query) || temp.includes(query) || hum.includes(query);
+      });
+    }
+
+    const shown = rows.slice(0, 20);
+    renderTable('nowTableBody', shown);
+
+    const summary = document.getElementById('nowSummary');
+    if (summary) {
+      summary.textContent = shown.length
+        ? `${shown.length} mẫu đang hiển thị trong 24 giờ gần nhất.`
+        : 'Không có mẫu nào khớp điều kiện lọc.';
+    }
+  }
+
+  function applyHistoryFilters() {
+    const tempMode = document.getElementById('historyTempBandSelect')?.value || '';
+    const humMode = document.getElementById('historyHumBandSelect')?.value || '';
+    const query = (document.getElementById('historySearch')?.value || '').trim().toLowerCase();
+
+    let rows = state.historyRows.slice();
+
+    rows = rows.filter((row) => matchTempBand(row, tempMode) && matchHumBand(row, humMode));
+
+    if (query) {
+      rows = rows.filter((row) => {
+        const time = formatDateTime(row.recorded_at).toLowerCase();
+        const temp = formatNumber(row.temperature);
+        const hum = formatNumber(row.humidity);
+        return time.includes(query) || temp.includes(query) || hum.includes(query);
+      });
+    }
+
+    renderTable('historyTableBody', rows);
+
+    const summary = document.getElementById('historySummary');
+    if (summary) {
+      const label = state.historyDate === 'all'
+        ? 'tất cả lịch sử đang tải'
+        : `ngày ${formatDateOnly(state.historyDate)}`;
+      summary.textContent = rows.length
+        ? `${rows.length} mẫu khớp bộ lọc cho ${label}.`
+        : `Không có mẫu nào khớp bộ lọc cho ${label}.`;
+    }
+  }
+
+  function wireNowControls() {
+    const rerender = () => applyNowFilters();
+    document.getElementById('nowTempBandSelect')?.addEventListener('change', rerender);
+    document.getElementById('nowHumBandSelect')?.addEventListener('change', rerender);
+
+    let nowTimer = null;
+    document.getElementById('nowSearch')?.addEventListener('input', () => {
+      clearTimeout(nowTimer);
+      nowTimer = setTimeout(rerender, 180);
+    });
+  }
+
+  function fillHistoryDateOptions() {
+    const select = document.getElementById('historyDateSelect');
+    if (!select) return;
+
+    const options = buildPastDateOptions(14);
+
+    select.innerHTML = `
+      <option value="all">Tất cả lịch sử (tối đa 1000 mẫu gần nhất)</option>
+      ${options.map((item) => `<option value="${item.value}">${item.label}</option>`).join('')}
+    `;
+
+    if (!state.historyDate) {
+      state.historyDate = options[0]?.value || 'all';
+    }
+    select.value = state.historyDate;
+  }
+
+  async function loadLatestStatus() {
+    const client = getClient();
+    const { data, error } = await client
+      .from('v_sensor_latest_status')
+      .select('*')
+      .eq('user_id', state.user.id)
+      .order('recorded_at', { ascending: false })
+      .limit(1);
+
+    if (error) throw error;
+    state.latest = data?.[0] || null;
+  }
+
+  async function loadNowRows() {
+    const client = getClient();
+    const { data, error } = await client
+      .from('v_sensor_current_24h')
+      .select('*')
+      .eq('user_id', state.user.id)
+      .order('recorded_at', { ascending: false })
+      .range(0, 199);
+
+    if (error) throw error;
+    state.nowRows = data || [];
+  }
+
+  async function loadHistoryRows(dateValue) {
+    const client = getClient();
+    let query = client
+      .from('v_sensor_history_14d')
+      .select('*')
+      .eq('user_id', state.user.id)
+      .order('recorded_at', { ascending: false });
+
+    if (dateValue && dateValue !== 'all') {
+      const { startIso, endIso } = buildUtcRangeForLocalDate(dateValue);
+      query = query.gte('recorded_at', startIso).lt('recorded_at', endIso).range(0, 999);
+    } else {
+      query = query.range(0, 999);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    state.historyRows = data || [];
+  }
+
   function switchView(view) {
     const nowSec = document.getElementById('statusNow');
     const hisSec = document.getElementById('statusHistory');
@@ -211,238 +380,132 @@
     if (view === 'history') {
       nowSec.classList.add('hidden');
       hisSec.classList.remove('hidden');
-
       tabNow.classList.remove(...activeCls);
       tabNow.classList.add(...inactiveCls);
       tabHis.classList.remove(...inactiveCls);
       tabHis.classList.add(...activeCls);
-    } else {
-      hisSec.classList.add('hidden');
-      nowSec.classList.remove('hidden');
-
-      tabHis.classList.remove(...activeCls);
-      tabHis.classList.add(...inactiveCls);
-      tabNow.classList.remove(...inactiveCls);
-      tabNow.classList.add(...activeCls);
+      return;
     }
+
+    hisSec.classList.add('hidden');
+    nowSec.classList.remove('hidden');
+    tabHis.classList.remove(...activeCls);
+    tabHis.classList.add(...inactiveCls);
+    tabNow.classList.remove(...inactiveCls);
+    tabNow.classList.add(...activeCls);
   }
 
-  // ==== Filter + search cho tab HIỆN GIỜ ====
-  function setupNowControls() {
-    const tempSel = document.getElementById('nowTempBandSelect');
-    const humSel  = document.getElementById('nowHumBandSelect');
-    const search  = document.getElementById('nowSearch');
-    if (!tempSel || !humSel || !search) return;
+  async function refreshPageData(includeHistory = true) {
+    state.user = (await getClient().auth.getUser()).data?.user || null;
 
-    const handler = () => applyNowFilters();
-
-    tempSel.addEventListener('change', handler);
-    humSel.addEventListener('change', handler);
-    search.addEventListener('input', () => {
-      clearTimeout(applyNowFilters._timer);
-      applyNowFilters._timer = setTimeout(handler, 200);
-    });
-  }
-
-  function applyNowFilters() {
-    const tempSel = document.getElementById('nowTempBandSelect');
-    const humSel  = document.getElementById('nowHumBandSelect');
-    const search  = document.getElementById('nowSearch');
-
-    if (!tempSel || !humSel || !search) return;
-
-    let rows = gNowRows.slice();
-    const tMode = tempSel.value;
-    const hMode = humSel.value;
-    const q     = (search.value || '').trim().toLowerCase();
-
-    rows = rows.filter(r => matchTempBand(r, tMode) && matchHumBand(r, hMode));
-
-    if (q) {
-      rows = rows.filter(r => {
-        const tStr  = fmtNumber(r.temp);
-        const hStr  = fmtNumber(r.hum);
-        const tsStr = (r.tsDisplay || '').toLowerCase();
-        return tsStr.includes(q) || tStr.includes(q) || hStr.includes(q);
-      });
+    if (!state.user) {
+      setError('Hãy đăng nhập để xem trạng thái tủ thuốc của bạn.');
+      state.latest = null;
+      state.nowRows = [];
+      state.historyRows = [];
+      renderLatestStatus();
+      renderTable('nowTableBody', []);
+      renderTable('historyTableBody', []);
+      return;
     }
 
-    renderTable('nowTableBody', rows);
-  }
+    clearError();
 
-  // ==== Filter + search cho tab LỊCH SỬ ====
-  function setupHistoryControls() {
-    const dateSel = document.getElementById('historyDateSelect');
-    const tempSel = document.getElementById('historyTempBandSelect');
-    const humSel  = document.getElementById('historyHumBandSelect');
-    const search  = document.getElementById('historySearch');
-
-    if (!dateSel || !tempSel || !humSel || !search) return;
-
-    const dateCount = new Map(); // key -> số mẫu
-    gHistoryRows.forEach(r => {
-      dateCount.set(r.key, (dateCount.get(r.key) || 0) + 1);
-    });
-    const allKeys = Array.from(dateCount.keys()).sort();
-
-    dateSel.innerHTML = '';
-
-    // MỤC "TẤT CẢ" (gộp hôm qua + mọi ngày trước đó)
-    const totalSamples = gHistoryRows.length;
-    const optAll = document.createElement('option');
-    optAll.value = 'all';
-    optAll.textContent = `Tất cả (hôm qua + các ngày trước đó) — ${totalSamples} mẫu`;
-    dateSel.appendChild(optAll);
-
-    // option: Chỉ hôm qua (nếu có)
-    if (gPrevKey && dateCount.has(gPrevKey)) {
-      const optPrev = document.createElement('option');
-      optPrev.value = 'prev';
-      optPrev.textContent = `Chỉ hôm qua (${keyToDisplay(gPrevKey)})`;
-      dateSel.appendChild(optPrev);
+    await loadLatestStatus();
+    await loadNowRows();
+    if (includeHistory) {
+      await loadHistoryRows(state.historyDate || 'all');
     }
 
-    // option: từng ngày cụ thể
-    allKeys.forEach(k => {
-      const opt = document.createElement('option');
-      opt.value = 'key:' + k;
-      opt.textContent = `${keyToDisplay(k)} (${dateCount.get(k)} mẫu)`;
-      dateSel.appendChild(opt);
-    });
-
-    // mặc định chọn "all"
-    dateSel.value = 'all';
-
-    const handler = () => applyHistoryFilters();
-    dateSel.addEventListener('change', handler);
-    tempSel.addEventListener('change', handler);
-    humSel.addEventListener('change', handler);
-    search.addEventListener('input', () => {
-      clearTimeout(applyHistoryFilters._timer);
-      applyHistoryFilters._timer = setTimeout(handler, 200);
-    });
-  }
-
-  function applyHistoryFilters() {
-    const dateSel = document.getElementById('historyDateSelect');
-    const tempSel = document.getElementById('historyTempBandSelect');
-    const humSel  = document.getElementById('historyHumBandSelect');
-    const search  = document.getElementById('historySearch');
-    const summary = document.getElementById('historySummary');
-
-    if (!dateSel || !tempSel || !humSel || !search || !summary) return;
-
-    let rows = gHistoryRows.slice();
-
-    // lọc theo ngày
-    const dateMode = dateSel.value || 'all';
-    if (dateMode === 'prev' && gPrevKey) {
-      rows = rows.filter(r => r.key === gPrevKey);
-    } else if (dateMode.startsWith('key:')) {
-      const key = dateMode.slice(4);
-      rows = rows.filter(r => r.key === key);
-    } // 'all' -> giữ nguyên
-
-    // lọc band
-    const tMode = tempSel.value;
-    const hMode = humSel.value;
-    rows = rows.filter(r => matchTempBand(r, tMode) && matchHumBand(r, hMode));
-
-    // search
-    const q = (search.value || '').trim().toLowerCase();
-    if (q) {
-      rows = rows.filter(r => {
-        const tStr  = fmtNumber(r.temp);
-        const hStr  = fmtNumber(r.hum);
-        const tsStr = (r.tsDisplay || '').toLowerCase();
-        return tsStr.includes(q) || tStr.includes(q) || hStr.includes(q);
-      });
-    }
-
-    renderTable('historyTableBody', rows);
-
-    let dateText;
-    if (dateMode === 'all') {
-      dateText = 'tất cả (hôm qua + các ngày trước đó)';
-    } else if (dateMode === 'prev' && gPrevKey) {
-      dateText = `chỉ hôm qua (${keyToDisplay(gPrevKey)})`;
-    } else if (dateMode.startsWith('key:')) {
-      dateText = `ngày ${keyToDisplay(dateMode.slice(4))}`;
-    } else {
-      dateText = 'không rõ';
-    }
-
-    summary.textContent = rows.length
-      ? `${rows.length} mẫu, ${dateText}. Có thể lọc thêm bằng band nhiệt/ẩm hoặc ô tìm kiếm.`
-      : `Không tìm thấy mẫu nào khớp điều kiện lọc (${dateText}).`;
-  }
-
-  // ==== Load + render data (dùng lại cho auto refresh) ====
-  async function refreshDataOnce() {
-    const rows = await fetchLogRows();
-    if (!rows.length) throw new Error('Empty sheet');
-    rows.sort((a, b) => a.ts - b.ts); // tăng dần theo thời gian
-    gRows = rows;
-
-    const { latestKey, prevKey } = getLatestAndPrevKeys(rows);
-    gLatestKey = latestKey;
-    gPrevKey   = prevKey;
-
-    if (!latestKey) throw new Error('No latest day');
-
-    // === HIỆN GIỜ ===
-    const latestRows = rows.filter(r => r.key === latestKey);
-    const latest20Desc = latestRows.slice(-20).reverse(); // 20 điểm mới nhất (từ mới đến cũ)
-    gNowRows = latest20Desc;
-
-    const latestPoint = latest20Desc[0] || latestRows[latestRows.length - 1];
-    if (latestPoint) {
-      const tsEl = document.getElementById('nowTimestamp');
-      const tEl  = document.getElementById('nowTemp');
-      const hEl  = document.getElementById('nowHum');
-      const tbEl = document.getElementById('nowTempBand');
-      const hbEl = document.getElementById('nowHumBand');
-
-      if (tsEl) tsEl.textContent = latestPoint.tsDisplay;
-      if (tEl)  tEl.textContent  = `${fmtNumber(latestPoint.temp)} °C`;
-      if (hEl)  hEl.textContent  = `${fmtNumber(latestPoint.hum)} %`;
-      if (tbEl) tbEl.textContent = latestPoint.tempBand;
-      if (hbEl) hbEl.textContent = latestPoint.humBand;
-
-      applyOverallBadge(overallState(latestPoint.temp, latestPoint.hum));
-    }
-
-    // Rerender bảng "hiện giờ" theo filter hiện tại
+    renderLatestStatus();
     applyNowFilters();
-
-    // === LỊCH SỬ ===
-    gHistoryRows = rows.filter(r => r.key !== latestKey); // chỉ hôm qua + trước đó
     applyHistoryFilters();
   }
 
-  // ==== INIT ====
+  function wireHistoryControls() {
+    const historyDateSelect = document.getElementById('historyDateSelect');
+    const historyTempBandSelect = document.getElementById('historyTempBandSelect');
+    const historyHumBandSelect = document.getElementById('historyHumBandSelect');
+    const historySearch = document.getElementById('historySearch');
+
+    historyDateSelect?.addEventListener('change', async (e) => {
+      state.historyDate = e.target.value || 'all';
+      try {
+        await loadHistoryRows(state.historyDate);
+        applyHistoryFilters();
+      } catch (err) {
+        console.error(err);
+        setError('Không tải được lịch sử trạng thái.');
+      }
+    });
+
+    const rerender = () => applyHistoryFilters();
+    historyTempBandSelect?.addEventListener('change', rerender);
+    historyHumBandSelect?.addEventListener('change', rerender);
+
+    let historyTimer = null;
+    historySearch?.addEventListener('input', () => {
+      clearTimeout(historyTimer);
+      historyTimer = setTimeout(rerender, 180);
+    });
+  }
+
+  function wireTabs() {
+    document.querySelectorAll('[data-view-tab]').forEach((link) => {
+      link.addEventListener('click', async (event) => {
+        event.preventDefault();
+        const view = link.dataset.viewTab || 'now';
+        const url = new URL(window.location.href);
+        url.searchParams.set('view', view);
+        history.replaceState({}, '', url.toString());
+        switchView(view);
+
+        if (view === 'history') {
+          try {
+            await loadHistoryRows(state.historyDate || 'all');
+            applyHistoryFilters();
+          } catch (err) {
+            console.error(err);
+            setError('Không tải được lịch sử trạng thái.');
+          }
+        }
+      });
+    });
+  }
+
   async function init() {
-    const view = new URLSearchParams(location.search).get('view') || 'now';
+    fillHistoryDateOptions();
+    wireNowControls();
+    wireHistoryControls();
+    wireTabs();
+
+    const view = new URLSearchParams(window.location.search).get('view') || 'now';
     switchView(view);
 
-    const errBox = document.getElementById('statusError');
-
     try {
-      // load lần đầu
-      await refreshDataOnce();
-
-      // gán sự kiện filter
-      setupNowControls();
-      setupHistoryControls();
-
-      // Auto refresh mỗi 60s
-      setInterval(() => {
-        refreshDataOnce().catch(e => console.error('Auto refresh error', e));
-      }, 60000);
-    } catch (e) {
-      console.error('Trạng thái: lỗi đọc sheet', e);
-      if (errBox) errBox.classList.remove('hidden');
+      await refreshPageData(true);
+    } catch (err) {
+      console.error(err);
+      setError('Không tải được dữ liệu trạng thái từ Supabase.');
     }
+
+    const client = getClient();
+    client.auth.onAuthStateChange(async () => {
+      try {
+        await refreshPageData(true);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    refreshTimer = setInterval(async () => {
+      try {
+        const historyVisible = !document.getElementById('statusHistory')?.classList.contains('hidden');
+        await refreshPageData(historyVisible);
+      } catch (err) {
+        console.error('Auto refresh trạng thái lỗi:', err);
+      }
+    }, REFRESH_MS);
   }
 
   document.addEventListener('DOMContentLoaded', init);
