@@ -12,7 +12,9 @@
     latest: null,
     nowRows: [],
     historyRows: [],
-    historyDate: null
+    historyDate: null,
+    statusEmailAlertsEnabled: true,
+    profileEmail: ''
   };
 
   function getClient() {
@@ -110,6 +112,26 @@
     };
   }
 
+  function withTempEmoji(row) {
+    const label = row?.temp_band_label || '—';
+    const key = row?.temp_band_key || '';
+    if (key === 'low') return `❄️ ${label}`;
+    if (key === 'stable') return `✅ ${label}`;
+    if (key === 'warning') return `⚠️ ${label}`;
+    if (key === 'danger') return `🔥 ${label}`;
+    return label;
+  }
+
+  function withHumEmoji(row) {
+    const label = row?.humidity_band_label || '—';
+    const key = row?.humidity_band_key || '';
+    if (key === 'dry') return `⚠️ ${label}`;
+    if (key === 'stable') return `✅ ${label}`;
+    if (key === 'warning') return `⚠️ ${label}`;
+    if (key === 'danger') return `💧 ${label}`;
+    return label;
+  }
+
   function setOverallBadge(level, text) {
     const el = document.getElementById('nowOverallBadge');
     if (!el) return;
@@ -118,27 +140,94 @@
 
     if (level === 'danger') {
       el.classList.add('border-rose-200', 'bg-rose-50', 'text-rose-700');
-      el.textContent = text || 'Cảnh báo';
+      el.textContent = text || '🚨 Cảnh báo';
       return;
     }
     if (level === 'warning') {
       el.classList.add('border-amber-200', 'bg-amber-50', 'text-amber-700');
-      el.textContent = text || 'Cần chú ý';
+      el.textContent = text || '⚠️ Cần chú ý';
       return;
     }
     if (level === 'safe') {
       el.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-700');
-      el.textContent = text || 'An toàn';
+      el.textContent = text || '✅ An toàn';
       return;
     }
     if (level === 'offline') {
       el.classList.add('border-slate-200', 'bg-slate-100', 'text-slate-700');
-      el.textContent = text || 'Mất kết nối';
+      el.textContent = text || '📴 Dữ liệu cũ';
       return;
     }
 
     el.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-600');
-    el.textContent = text || 'Chưa có dữ liệu';
+    el.textContent = text || '❔ Chưa có dữ liệu';
+  }
+
+  function renderEmailAlertToggle() {
+    const btn = document.getElementById('emailAlertToggle');
+    const hint = document.getElementById('emailAlertHint');
+    if (!btn) return;
+
+    if (!state.user) {
+      btn.disabled = true;
+      btn.className = 'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium border-slate-200 bg-slate-100 text-slate-500';
+      btn.textContent = 'Mail cảnh báo: cần đăng nhập';
+      if (hint) hint.textContent = 'Đăng nhập để bật hoặc tắt mail cảnh báo.';
+      return;
+    }
+
+    btn.disabled = false;
+
+    if (state.statusEmailAlertsEnabled) {
+      btn.className = 'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium border-emerald-200 bg-emerald-50 text-emerald-700';
+      btn.textContent = 'Mail cảnh báo: đang bật';
+    } else {
+      btn.className = 'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium border-slate-200 bg-slate-100 text-slate-700';
+      btn.textContent = 'Mail cảnh báo: đang tắt';
+    }
+
+    if (hint) {
+      hint.textContent = state.profileEmail
+        ? `Mail sẽ gửi tới: ${state.profileEmail}`
+        : 'Tài khoản này chưa có email profile.';
+    }
+  }
+
+  async function loadProfileAlertSetting() {
+    const client = getClient();
+    if (!state.user) {
+      state.statusEmailAlertsEnabled = true;
+      state.profileEmail = '';
+      renderEmailAlertToggle();
+      return;
+    }
+
+    const { data, error } = await client
+      .from('profiles')
+      .select('email, status_email_alerts_enabled')
+      .eq('id', state.user.id)
+      .single();
+
+    if (error) throw error;
+
+    state.profileEmail = data?.email || state.user.email || '';
+    state.statusEmailAlertsEnabled = data?.status_email_alerts_enabled !== false;
+    renderEmailAlertToggle();
+  }
+
+  async function saveProfileAlertSetting(nextValue) {
+    const client = getClient();
+    if (!state.user) return;
+
+    const { error } = await client
+      .from('profiles')
+      .update({ status_email_alerts_enabled: nextValue })
+      .eq('id', state.user.id);
+
+    if (error) throw error;
+
+    state.statusEmailAlertsEnabled = nextValue;
+    renderEmailAlertToggle();
   }
 
   function renderLatestStatus() {
@@ -160,7 +249,7 @@
       if (tempBandEl) tempBandEl.textContent = '—';
       if (humBandEl) humBandEl.textContent = '—';
       if (noteEl) noteEl.textContent = 'Chưa có dữ liệu cảm biến.';
-      setOverallBadge('unknown', 'Chưa có dữ liệu');
+      setOverallBadge('unknown', '❔ Chưa có dữ liệu');
       return;
     }
 
@@ -168,22 +257,31 @@
     if (timestampEl) timestampEl.textContent = formatDateTime(row.recorded_at);
     if (tempEl) tempEl.textContent = `${formatNumber(row.temperature)} °C`;
     if (humEl) humEl.textContent = `${formatNumber(row.humidity)} %`;
-    if (tempBandEl) tempBandEl.textContent = row.temp_band_label || '—';
-    if (humBandEl) humBandEl.textContent = row.humidity_band_label || '—';
+    if (tempBandEl) tempBandEl.textContent = withTempEmoji(row);
+    if (humBandEl) humBandEl.textContent = withHumEmoji(row);
 
     if (row.device_online === false) {
-      setOverallBadge('offline', 'Mất kết nối');
+      setOverallBadge('offline', '📴 Pi offline');
       if (noteEl) noteEl.textContent = 'Pi đang offline, trang web đang giữ lại mẫu đo gần nhất.';
       return;
     }
 
     if (!row.recent_24h) {
-      setOverallBadge('offline', 'Dữ liệu cũ');
+      setOverallBadge('offline', '📴 Dữ liệu cũ');
       if (noteEl) noteEl.textContent = 'Chưa có mẫu mới trong 24 giờ gần nhất. Đây là dữ liệu cuối cùng còn lưu.';
       return;
     }
 
-    setOverallBadge(row.alert_level_key || 'unknown', row.alert_level_label || 'Chưa rõ');
+    if (row.alert_level_key === 'danger') {
+      setOverallBadge('danger', '🚨 Cảnh báo');
+    } else if (row.alert_level_key === 'warning') {
+      setOverallBadge('warning', '⚠️ Cần chú ý');
+    } else if (row.alert_level_key === 'safe') {
+      setOverallBadge('safe', '✅ An toàn');
+    } else {
+      setOverallBadge('unknown', row.alert_level_label || '❔ Chưa rõ');
+    }
+
     if (noteEl) noteEl.textContent = 'Dữ liệu đang tự động cập nhật từ Pi qua Supabase.';
   }
 
@@ -202,9 +300,9 @@
         <tr class="${rowCls}">
           <td class="px-4 py-1.5 whitespace-nowrap text-xs md:text-sm">${escapeHtml(formatDateTime(row.recorded_at))}</td>
           <td class="px-4 py-1.5 text-right">${escapeHtml(formatNumber(row.temperature))}</td>
-          <td class="px-4 py-1.5 text-xs">${escapeHtml(row.temp_band_label || '—')}</td>
+          <td class="px-4 py-1.5 text-xs">${escapeHtml(withTempEmoji(row))}</td>
           <td class="px-4 py-1.5 text-right">${escapeHtml(formatNumber(row.humidity))}</td>
-          <td class="px-4 py-1.5 text-xs">${escapeHtml(row.humidity_band_label || '—')}</td>
+          <td class="px-4 py-1.5 text-xs">${escapeHtml(withHumEmoji(row))}</td>
         </tr>
       `;
     }).join('');
@@ -236,7 +334,6 @@
     const query = (document.getElementById('nowSearch')?.value || '').trim().toLowerCase();
 
     let rows = state.nowRows.slice();
-
     rows = rows.filter((row) => matchTempBand(row, tempMode) && matchHumBand(row, humMode));
 
     if (query) {
@@ -265,7 +362,6 @@
     const query = (document.getElementById('historySearch')?.value || '').trim().toLowerCase();
 
     let rows = state.historyRows.slice();
-
     rows = rows.filter((row) => matchTempBand(row, tempMode) && matchHumBand(row, humMode));
 
     if (query) {
@@ -362,7 +458,6 @@
 
     const { data, error } = await query;
     if (error) throw error;
-
     state.historyRows = data || [];
   }
 
@@ -403,14 +498,18 @@
       state.latest = null;
       state.nowRows = [];
       state.historyRows = [];
+      state.profileEmail = '';
+      state.statusEmailAlertsEnabled = true;
       renderLatestStatus();
       renderTable('nowTableBody', []);
       renderTable('historyTableBody', []);
+      renderEmailAlertToggle();
       return;
     }
 
     clearError();
 
+    await loadProfileAlertSetting();
     await loadLatestStatus();
     await loadNowRows();
     if (includeHistory) {
@@ -418,6 +517,7 @@
     }
 
     renderLatestStatus();
+    renderEmailAlertToggle();
     applyNowFilters();
     applyHistoryFilters();
   }
@@ -473,11 +573,30 @@
     });
   }
 
+  function wireEmailToggle() {
+    document.getElementById('emailAlertToggle')?.addEventListener('click', async () => {
+      if (!state.user) return;
+      const nextValue = !state.statusEmailAlertsEnabled;
+      const btn = document.getElementById('emailAlertToggle');
+      if (btn) btn.disabled = true;
+
+      try {
+        await saveProfileAlertSetting(nextValue);
+      } catch (err) {
+        console.error(err);
+        setError('Không cập nhật được cài đặt mail cảnh báo.');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
+
   async function init() {
     fillHistoryDateOptions();
     wireNowControls();
     wireHistoryControls();
     wireTabs();
+    wireEmailToggle();
 
     const view = new URLSearchParams(window.location.search).get('view') || 'now';
     switchView(view);
